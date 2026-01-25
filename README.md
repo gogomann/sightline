@@ -40,7 +40,7 @@ flowchart TB
         OverpassAPI["Overpass API (OSM Data)"]
     end
 
-    SearchBar & Filters & ResultList & MapView -->|POST /api/search| route
+    Frontend -->|POST /api/search| route
     route --> parser
     route --> geo
     route --> overpass
