@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import SearchBar from '@/components/SearchBar';
 import Filters from '@/components/Filters';
@@ -14,6 +14,17 @@ const MapView = dynamic(() => import('@/components/MapView'), {
 
 type MobileTab = 'map' | 'results' | 'filters';
 
+const INITIAL_QUERIES = [
+  'airports near london',
+  'hospitals in paris',
+  'power plants in texas',
+  'train stations in tokyo',
+  'universities in california',
+  'stadiums in berlin',
+  'museums in rome',
+  'bridges in new york',
+];
+
 export default function Home() {
   const [searchResult, setSearchResult] = useState<SearchResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -22,6 +33,7 @@ export default function Home() {
   const [filterOperator, setFilterOperator] = useState<string | null>(null);
   const [filterType, setFilterType] = useState<string | null>(null);
   const [mobileTab, setMobileTab] = useState<MobileTab>('map');
+  const [initialQuery, setInitialQuery] = useState<string>('');
 
   const handleSearch = useCallback(async (query: string) => {
     setLoading(true);
@@ -55,6 +67,13 @@ export default function Home() {
     }
   }, []);
 
+  // Load a random query on first mount
+  useEffect(() => {
+    const randomQuery = INITIAL_QUERIES[Math.floor(Math.random() * INITIAL_QUERIES.length)];
+    setInitialQuery(randomQuery);
+    handleSearch(randomQuery);
+  }, [handleSearch]);
+
   const handleSelect = useCallback((id: string) => {
     setSelectedId(prev => prev === id ? null : id);
   }, []);
@@ -78,7 +97,7 @@ export default function Home() {
             <span className="logo-text">Sightline</span>
           </div>
           
-          <SearchBar onSearch={handleSearch} loading={loading} />
+          <SearchBar onSearch={handleSearch} loading={loading} initialQuery={initialQuery} />
           
           <div className="header-meta">
             <a 

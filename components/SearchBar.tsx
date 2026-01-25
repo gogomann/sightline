@@ -97,6 +97,13 @@ export default function SearchBar({ onSearch, loading, initialQuery = '' }: Sear
   const containerRef = useRef<HTMLDivElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
 
+  // Sync query state when initialQuery prop changes
+  useEffect(() => {
+    if (initialQuery) {
+      setQuery(initialQuery);
+    }
+  }, [initialQuery]);
+
   // Generate suggestions based on current query
   const suggestions = useMemo((): Suggestion[] => {
     if (!query.trim()) return [];
