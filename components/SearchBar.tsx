@@ -197,11 +197,16 @@ export default function SearchBar({ onSearch, loading, initialQuery = '' }: Sear
     const lastColonIndex = query.lastIndexOf(':');
     const isTypingStructured = lastColonIndex !== -1 && !query.slice(lastColonIndex).includes(' ');
     
-    // Check if the query already contains a complete asset type
-    const matchedAssetType = ASSET_TYPES.find(asset => 
-      lowerQuery === asset.keyword.toLowerCase() ||
-      lowerQuery.startsWith(asset.keyword.toLowerCase() + ' ')
+    // Find the longest matching asset type (to handle multi-word types like "border control")
+    // Sort by keyword length descending to match longest first
+    const sortedAssetTypes = [...ASSET_TYPES].sort((a, b) => 
+      b.keyword.length - a.keyword.length
     );
+    
+    const matchedAssetType = sortedAssetTypes.find(asset => {
+      const assetKeyword = asset.keyword.toLowerCase();
+      return lowerQuery === assetKeyword || lowerQuery.startsWith(assetKeyword + ' ');
+    });
     
     // If we have a complete asset type, suggest location keywords
     if (matchedAssetType) {
@@ -211,7 +216,7 @@ export default function SearchBar({ onSearch, loading, initialQuery = '' }: Sear
       if (!afterAsset) {
         LOCATION_KEYWORDS.forEach(kw => {
           results.push({
-            text: query.trim() + ' ' + kw.keyword + ' ',
+            text: matchedAssetType.keyword + ' ' + kw.keyword + ' ',
             type: 'keyword',
             description: kw.description
           });
@@ -230,39 +235,44 @@ export default function SearchBar({ onSearch, loading, initialQuery = '' }: Sear
           });
         });
       }
-    } else {
-      // No complete asset type yet - suggest matching asset types
-      const matchingAssets = ASSET_TYPES.filter(asset => 
-        asset.keyword.toLowerCase().startsWith(lowerQuery) ||
-        asset.label.toLowerCase().startsWith(lowerQuery)
-      ).slice(0, 6);
       
-      matchingAssets.forEach(asset => {
+      // Return early - don't suggest more asset types when we already have one
+      if (results.length > 0) {
+        return results.slice(0, 8);
+      }
+    }
+    
+    // No complete asset type yet - suggest matching asset types
+    const matchingAssets = ASSET_TYPES.filter(asset => 
+      asset.keyword.toLowerCase().startsWith(lowerQuery) ||
+      asset.label.toLowerCase().startsWith(lowerQuery)
+    ).slice(0, 6);
+    
+    matchingAssets.forEach(asset => {
+      results.push({
+        text: asset.keyword,
+        type: 'asset',
+        description: asset.label
+      });
+    });
+    
+    // Suggest structured keywords if query starts with them or is short
+    if (query.length < 15 || isTypingStructured) {
+      const words = query.split(/\s+/);
+      const lastWord = words[words.length - 1].toLowerCase();
+      
+      const matchingKeywords = STRUCTURED_KEYWORDS.filter(kw =>
+        kw.keyword.startsWith(lastWord) && lastWord.length > 0
+      );
+      
+      matchingKeywords.forEach(kw => {
+        const prefix = words.length > 1 ? words.slice(0, -1).join(' ') + ' ' : '';
         results.push({
-          text: asset.keyword,
-          type: 'asset',
-          description: asset.label
+          text: prefix + kw.keyword,
+          type: 'keyword',
+          description: kw.description
         });
       });
-      
-      // Suggest structured keywords if query starts with them or is short
-      if (query.length < 15 || isTypingStructured) {
-        const words = query.split(/\s+/);
-        const lastWord = words[words.length - 1].toLowerCase();
-        
-        const matchingKeywords = STRUCTURED_KEYWORDS.filter(kw =>
-          kw.keyword.startsWith(lastWord) && lastWord.length > 0
-        );
-        
-        matchingKeywords.forEach(kw => {
-          const prefix = words.length > 1 ? words.slice(0, -1).join(' ') + ' ' : '';
-          results.push({
-            text: prefix + kw.keyword,
-            type: 'keyword',
-            description: kw.description
-          });
-        });
-      }
     }
     
     // Add matching example queries
