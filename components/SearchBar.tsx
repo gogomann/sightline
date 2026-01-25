@@ -69,6 +69,24 @@ const ASSET_TYPES: { keyword: string; label: string }[] = [
   { keyword: 'churches', label: 'Churches' },
   { keyword: 'mosques', label: 'Mosques' },
   { keyword: 'temples', label: 'Temples' },
+  { keyword: 'border control', label: 'Border Control' },
+  { keyword: 'checkpoints', label: 'Checkpoints' },
+  { keyword: 'cooling towers', label: 'Cooling Towers' },
+  { keyword: 'radars', label: 'Radars' },
+  { keyword: 'antennas', label: 'Antennas' },
+  { keyword: 'observatories', label: 'Observatories' },
+  { keyword: 'ferry terminals', label: 'Ferry Terminals' },
+  { keyword: 'naval bases', label: 'Naval Bases' },
+  { keyword: 'barracks', label: 'Barracks' },
+  { keyword: 'bunkers', label: 'Bunkers' },
+  { keyword: 'silos', label: 'Silos' },
+  { keyword: 'storage tanks', label: 'Storage Tanks' },
+  { keyword: 'water treatment', label: 'Water Treatment' },
+  { keyword: 'post offices', label: 'Post Offices' },
+  { keyword: 'courthouses', label: 'Courthouses' },
+  { keyword: 'cinemas', label: 'Cinemas' },
+  { keyword: 'synagogues', label: 'Synagogues' },
+  { keyword: 'cemeteries', label: 'Cemeteries' },
 ];
 
 // Structured query keywords
@@ -115,59 +133,67 @@ export default function SearchBar({ onSearch, loading, initialQuery = '' }: Sear
     const lastColonIndex = query.lastIndexOf(':');
     const isTypingStructured = lastColonIndex !== -1 && !query.slice(lastColonIndex).includes(' ');
     
-    // Get the last word being typed
-    const words = query.split(/\s+/);
-    const lastWord = words[words.length - 1].toLowerCase();
+    // Check if the query already contains a complete asset type
+    const matchedAssetType = ASSET_TYPES.find(asset => 
+      lowerQuery === asset.keyword.toLowerCase() ||
+      lowerQuery.startsWith(asset.keyword.toLowerCase() + ' ')
+    );
     
-    // If at start or after a space, suggest asset types
-    if (words.length === 1 || (words.length > 1 && !['near', 'in', 'within'].includes(words[words.length - 2].toLowerCase()))) {
-      // Suggest matching asset types
+    // If we have a complete asset type, suggest location keywords
+    if (matchedAssetType) {
+      const afterAsset = lowerQuery.slice(matchedAssetType.keyword.length).trim();
+      
+      // If nothing after asset type, suggest location keywords
+      if (!afterAsset) {
+        LOCATION_KEYWORDS.forEach(kw => {
+          results.push({
+            text: query.trim() + ' ' + kw.keyword + ' ',
+            type: 'keyword',
+            description: kw.description
+          });
+        });
+      } else {
+        // User is typing after asset type - suggest matching location keywords
+        const matchingLocKeywords = LOCATION_KEYWORDS.filter(kw =>
+          kw.keyword.startsWith(afterAsset)
+        );
+        
+        matchingLocKeywords.forEach(kw => {
+          results.push({
+            text: matchedAssetType.keyword + ' ' + kw.keyword + ' ',
+            type: 'keyword',
+            description: kw.description
+          });
+        });
+      }
+    } else {
+      // No complete asset type yet - suggest matching asset types
       const matchingAssets = ASSET_TYPES.filter(asset => 
-        asset.keyword.toLowerCase().startsWith(lastWord) ||
-        asset.label.toLowerCase().startsWith(lastWord)
-      ).slice(0, 5);
+        asset.keyword.toLowerCase().startsWith(lowerQuery) ||
+        asset.label.toLowerCase().startsWith(lowerQuery)
+      ).slice(0, 6);
       
       matchingAssets.forEach(asset => {
-        const prefix = words.length > 1 ? words.slice(0, -1).join(' ') + ' ' : '';
         results.push({
-          text: prefix + asset.keyword,
+          text: asset.keyword,
           type: 'asset',
           description: asset.label
         });
       });
-    }
-    
-    // Suggest structured keywords if query starts with them or is short
-    if (query.length < 15 || isTypingStructured) {
-      const matchingKeywords = STRUCTURED_KEYWORDS.filter(kw =>
-        kw.keyword.startsWith(lastWord) && lastWord.length > 0
-      );
       
-      matchingKeywords.forEach(kw => {
-        const prefix = words.length > 1 ? words.slice(0, -1).join(' ') + ' ' : '';
-        results.push({
-          text: prefix + kw.keyword,
-          type: 'keyword',
-          description: kw.description
-        });
-      });
-    }
-    
-    // Suggest location keywords after an asset type
-    if (words.length >= 1) {
-      const hasAssetType = ASSET_TYPES.some(asset => 
-        lowerQuery.includes(asset.keyword.toLowerCase())
-      );
-      
-      if (hasAssetType && lastWord.length > 0) {
-        const matchingLocKeywords = LOCATION_KEYWORDS.filter(kw =>
-          kw.keyword.startsWith(lastWord)
+      // Suggest structured keywords if query starts with them or is short
+      if (query.length < 15 || isTypingStructured) {
+        const words = query.split(/\s+/);
+        const lastWord = words[words.length - 1].toLowerCase();
+        
+        const matchingKeywords = STRUCTURED_KEYWORDS.filter(kw =>
+          kw.keyword.startsWith(lastWord) && lastWord.length > 0
         );
         
-        matchingLocKeywords.forEach(kw => {
-          const prefix = words.slice(0, -1).join(' ') + ' ';
+        matchingKeywords.forEach(kw => {
+          const prefix = words.length > 1 ? words.slice(0, -1).join(' ') + ' ' : '';
           results.push({
-            text: prefix + kw.keyword + ' ',
+            text: prefix + kw.keyword,
             type: 'keyword',
             description: kw.description
           });
