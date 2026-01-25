@@ -1,11 +1,17 @@
 'use client';
 
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 
 interface SearchBarProps {
   onSearch: (query: string) => void;
   loading: boolean;
   initialQuery?: string;
+}
+
+interface Suggestion {
+  text: string;
+  type: 'asset' | 'keyword' | 'example';
+  description?: string;
 }
 
 const EXAMPLE_QUERIES = [
@@ -16,30 +22,256 @@ const EXAMPLE_QUERIES = [
   'type:university region:california'
 ];
 
+// Asset types for autocomplete
+const ASSET_TYPES: { keyword: string; label: string }[] = [
+  { keyword: 'airports', label: 'Airports' },
+  { keyword: 'hospitals', label: 'Hospitals' },
+  { keyword: 'power plants', label: 'Power Plants' },
+  { keyword: 'substations', label: 'Substations' },
+  { keyword: 'data centers', label: 'Data Centers' },
+  { keyword: 'telecom towers', label: 'Telecom Towers' },
+  { keyword: 'train stations', label: 'Train Stations' },
+  { keyword: 'universities', label: 'Universities' },
+  { keyword: 'schools', label: 'Schools' },
+  { keyword: 'stadiums', label: 'Stadiums' },
+  { keyword: 'ports', label: 'Ports' },
+  { keyword: 'warehouses', label: 'Warehouses' },
+  { keyword: 'refineries', label: 'Refineries' },
+  { keyword: 'solar farms', label: 'Solar Farms' },
+  { keyword: 'wind farms', label: 'Wind Farms' },
+  { keyword: 'nuclear plants', label: 'Nuclear Plants' },
+  { keyword: 'dams', label: 'Dams' },
+  { keyword: 'military bases', label: 'Military Bases' },
+  { keyword: 'prisons', label: 'Prisons' },
+  { keyword: 'embassies', label: 'Embassies' },
+  { keyword: 'factories', label: 'Factories' },
+  { keyword: 'bridges', label: 'Bridges' },
+  { keyword: 'tunnels', label: 'Tunnels' },
+  { keyword: 'helipads', label: 'Helipads' },
+  { keyword: 'lighthouses', label: 'Lighthouses' },
+  { keyword: 'fire stations', label: 'Fire Stations' },
+  { keyword: 'police stations', label: 'Police Stations' },
+  { keyword: 'banks', label: 'Banks' },
+  { keyword: 'fuel stations', label: 'Fuel Stations' },
+  { keyword: 'charging stations', label: 'EV Charging Stations' },
+  { keyword: 'water towers', label: 'Water Towers' },
+  { keyword: 'landfills', label: 'Landfills' },
+  { keyword: 'quarries', label: 'Quarries' },
+  { keyword: 'museums', label: 'Museums' },
+  { keyword: 'libraries', label: 'Libraries' },
+  { keyword: 'theatres', label: 'Theatres' },
+  { keyword: 'hotels', label: 'Hotels' },
+  { keyword: 'pharmacies', label: 'Pharmacies' },
+  { keyword: 'clinics', label: 'Clinics' },
+  { keyword: 'bus stations', label: 'Bus Stations' },
+  { keyword: 'metro stations', label: 'Metro Stations' },
+  { keyword: 'parking', label: 'Parking' },
+  { keyword: 'churches', label: 'Churches' },
+  { keyword: 'mosques', label: 'Mosques' },
+  { keyword: 'temples', label: 'Temples' },
+];
+
+// Structured query keywords
+const STRUCTURED_KEYWORDS = [
+  { keyword: 'type:', description: 'Filter by asset type' },
+  { keyword: 'region:', description: 'Filter by region/state' },
+  { keyword: 'country:', description: 'Filter by country' },
+  { keyword: 'near:', description: 'Search near a location' },
+  { keyword: 'radius:', description: 'Set search radius in km' },
+  { keyword: 'operator:', description: 'Filter by operator' },
+];
+
+// Common location prepositions
+const LOCATION_KEYWORDS = [
+  { keyword: 'near', description: 'Search near a place' },
+  { keyword: 'in', description: 'Search within a region' },
+  { keyword: 'within', description: 'Set radius constraint' },
+];
+
 export default function SearchBar({ onSearch, loading, initialQuery = '' }: SearchBarProps) {
   const [query, setQuery] = useState(initialQuery);
   const [showExamples, setShowExamples] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const suggestionsRef = useRef<HTMLDivElement>(null);
+
+  // Generate suggestions based on current query
+  const suggestions = useMemo((): Suggestion[] => {
+    if (!query.trim()) return [];
+    
+    const lowerQuery = query.toLowerCase().trim();
+    const results: Suggestion[] = [];
+    
+    // Check if user is typing a structured query
+    const lastColonIndex = query.lastIndexOf(':');
+    const isTypingStructured = lastColonIndex !== -1 && !query.slice(lastColonIndex).includes(' ');
+    
+    // Get the last word being typed
+    const words = query.split(/\s+/);
+    const lastWord = words[words.length - 1].toLowerCase();
+    
+    // If at start or after a space, suggest asset types
+    if (words.length === 1 || (words.length > 1 && !['near', 'in', 'within'].includes(words[words.length - 2].toLowerCase()))) {
+      // Suggest matching asset types
+      const matchingAssets = ASSET_TYPES.filter(asset => 
+        asset.keyword.toLowerCase().startsWith(lastWord) ||
+        asset.label.toLowerCase().startsWith(lastWord)
+      ).slice(0, 5);
+      
+      matchingAssets.forEach(asset => {
+        const prefix = words.length > 1 ? words.slice(0, -1).join(' ') + ' ' : '';
+        results.push({
+          text: prefix + asset.keyword,
+          type: 'asset',
+          description: asset.label
+        });
+      });
+    }
+    
+    // Suggest structured keywords if query starts with them or is short
+    if (query.length < 15 || isTypingStructured) {
+      const matchingKeywords = STRUCTURED_KEYWORDS.filter(kw =>
+        kw.keyword.startsWith(lastWord) && lastWord.length > 0
+      );
+      
+      matchingKeywords.forEach(kw => {
+        const prefix = words.length > 1 ? words.slice(0, -1).join(' ') + ' ' : '';
+        results.push({
+          text: prefix + kw.keyword,
+          type: 'keyword',
+          description: kw.description
+        });
+      });
+    }
+    
+    // Suggest location keywords after an asset type
+    if (words.length >= 1) {
+      const hasAssetType = ASSET_TYPES.some(asset => 
+        lowerQuery.includes(asset.keyword.toLowerCase())
+      );
+      
+      if (hasAssetType && lastWord.length > 0) {
+        const matchingLocKeywords = LOCATION_KEYWORDS.filter(kw =>
+          kw.keyword.startsWith(lastWord)
+        );
+        
+        matchingLocKeywords.forEach(kw => {
+          const prefix = words.slice(0, -1).join(' ') + ' ';
+          results.push({
+            text: prefix + kw.keyword + ' ',
+            type: 'keyword',
+            description: kw.description
+          });
+        });
+      }
+    }
+    
+    // Add matching example queries
+    if (query.length >= 2) {
+      const matchingExamples = EXAMPLE_QUERIES.filter(ex =>
+        ex.toLowerCase().includes(lowerQuery) && ex.toLowerCase() !== lowerQuery
+      ).slice(0, 2);
+      
+      matchingExamples.forEach(ex => {
+        results.push({
+          text: ex,
+          type: 'example',
+          description: 'Example query'
+        });
+      });
+    }
+    
+    // Remove duplicates and limit results
+    const uniqueResults = results.filter((item, index, self) =>
+      index === self.findIndex(t => t.text === item.text)
+    );
+    
+    return uniqueResults.slice(0, 8);
+  }, [query]);
 
   const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     if (query.trim() && !loading) {
       onSearch(query.trim());
       setShowExamples(false);
+      setShowSuggestions(false);
     }
   }, [query, loading, onSearch]);
 
   const handleExampleClick = useCallback((example: string) => {
     setQuery(example);
     setShowExamples(false);
+    setShowSuggestions(false);
     onSearch(example);
   }, [onSearch]);
+
+  const handleSuggestionClick = useCallback((suggestion: Suggestion) => {
+    setQuery(suggestion.text);
+    setShowSuggestions(false);
+    setSelectedIndex(-1);
+    inputRef.current?.focus();
+    
+    // If it's a complete example, submit immediately
+    if (suggestion.type === 'example') {
+      onSearch(suggestion.text);
+    }
+  }, [onSearch]);
+
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setQuery(value);
+    setShowSuggestions(value.trim().length > 0);
+    setShowExamples(false);
+    setSelectedIndex(-1);
+  }, []);
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!showSuggestions || suggestions.length === 0) return;
+    
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setSelectedIndex(prev => 
+          prev < suggestions.length - 1 ? prev + 1 : 0
+        );
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setSelectedIndex(prev => 
+          prev > 0 ? prev - 1 : suggestions.length - 1
+        );
+        break;
+      case 'Tab':
+      case 'Enter':
+        if (selectedIndex >= 0 && selectedIndex < suggestions.length) {
+          e.preventDefault();
+          handleSuggestionClick(suggestions[selectedIndex]);
+        }
+        break;
+      case 'Escape':
+        setShowSuggestions(false);
+        setSelectedIndex(-1);
+        break;
+    }
+  }, [showSuggestions, suggestions, selectedIndex, handleSuggestionClick]);
+
+  // Scroll selected suggestion into view
+  useEffect(() => {
+    if (selectedIndex >= 0 && suggestionsRef.current) {
+      const selectedElement = suggestionsRef.current.children[selectedIndex + 1] as HTMLElement;
+      if (selectedElement) {
+        selectedElement.scrollIntoView({ block: 'nearest' });
+      }
+    }
+  }, [selectedIndex]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
         setShowExamples(false);
+        setShowSuggestions(false);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
@@ -47,18 +279,19 @@ export default function SearchBar({ onSearch, loading, initialQuery = '' }: Sear
   }, []);
 
   useEffect(() => {
-    function handleKeyDown(e: KeyboardEvent) {
+    function handleGlobalKeyDown(e: KeyboardEvent) {
       if (e.key === '/' && document.activeElement !== inputRef.current) {
         e.preventDefault();
         inputRef.current?.focus();
       }
       if (e.key === 'Escape') {
         setShowExamples(false);
+        setShowSuggestions(false);
         inputRef.current?.blur();
       }
     }
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
+    document.addEventListener('keydown', handleGlobalKeyDown);
+    return () => document.removeEventListener('keydown', handleGlobalKeyDown);
   }, []);
 
   return (
@@ -72,8 +305,9 @@ export default function SearchBar({ onSearch, loading, initialQuery = '' }: Sear
             ref={inputRef}
             type="text"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onFocus={() => setShowExamples(true)}
+            onChange={handleInputChange}
+            onFocus={() => !query && setShowExamples(true)}
+            onKeyDown={handleKeyDown}
             placeholder="Search infrastructure..."
             className="search-input"
             disabled={loading}
@@ -85,6 +319,44 @@ export default function SearchBar({ onSearch, loading, initialQuery = '' }: Sear
           )}
         </div>
       </form>
+
+      {showSuggestions && suggestions.length > 0 && (
+        <div ref={suggestionsRef} className="search-suggestions">
+          <div className="suggestions-header">Suggestions</div>
+          {suggestions.map((suggestion, idx) => (
+            <button
+              key={idx}
+              type="button"
+              className={`suggestion-item ${selectedIndex === idx ? 'selected' : ''}`}
+              onClick={() => handleSuggestionClick(suggestion)}
+              onMouseEnter={() => setSelectedIndex(idx)}
+            >
+              <span className={`suggestion-icon suggestion-icon-${suggestion.type}`}>
+                {suggestion.type === 'asset' && (
+                  <svg viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M8 1.5a6.5 6.5 0 100 13 6.5 6.5 0 000-13zM0 8a8 8 0 1116 0A8 8 0 010 8z"/>
+                    <path d="M8 4a.75.75 0 01.75.75v2.5h2.5a.75.75 0 010 1.5h-2.5v2.5a.75.75 0 01-1.5 0v-2.5h-2.5a.75.75 0 010-1.5h2.5v-2.5A.75.75 0 018 4z"/>
+                  </svg>
+                )}
+                {suggestion.type === 'keyword' && (
+                  <svg viewBox="0 0 16 16" fill="currentColor">
+                    <path fillRule="evenodd" d="M11.5 7a4.499 4.499 0 11-8.998 0 4.499 4.499 0 018.998 0zm-.82 4.74a6 6 0 111.06-1.06l3.04 3.04a.75.75 0 11-1.06 1.06l-3.04-3.04z"/>
+                  </svg>
+                )}
+                {suggestion.type === 'example' && (
+                  <svg viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M1.5 8a6.5 6.5 0 1113 0 6.5 6.5 0 01-13 0zM8 0a8 8 0 100 16A8 8 0 008 0zm.75 4.75a.75.75 0 00-1.5 0v2.5h-2.5a.75.75 0 000 1.5h2.5v2.5a.75.75 0 001.5 0v-2.5h2.5a.75.75 0 000-1.5h-2.5v-2.5z"/>
+                  </svg>
+                )}
+              </span>
+              <span className="suggestion-text">{suggestion.text}</span>
+              {suggestion.description && (
+                <span className="suggestion-description">{suggestion.description}</span>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
 
       {showExamples && !query && (
         <div className="search-examples">
