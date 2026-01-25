@@ -99,52 +99,240 @@ type:airport country:france
 
 ### Supported Asset Types
 
-**Infrastructure**
-- `telecom` / `tower` / `antenna` / `mast` - Telecommunications
-- `data_center` - Data centers
-- `power_plant` / `substation` - Power infrastructure
-- `solar` / `wind` / `nuclear` - Energy generation
-- `dam` - Dams
-- `pipeline` / `refinery` - Oil and gas
-- `oil_well` / `gas_well` - Extraction
-- `storage_tank` / `silo` / `gasometer` - Storage
-- `cooling_tower` / `chimney` - Industrial structures
-- `water_tower` / `water_treatment` / `wastewater` - Water infrastructure
+#### Energy & Power
+| Type | Aliases | Description |
+|------|---------|-------------|
+| `power_plant` | `powerplant` | Power generation facilities |
+| `substation` | - | Electrical substations |
+| `transformer` | - | Power transformers |
+| `power_line` | - | High voltage power lines |
+| `power_pole` | - | Power distribution poles |
+| `solar` | - | Solar farms and panels |
+| `wind` | - | Wind farms and turbines |
+| `nuclear` | `nuclear_site` | Nuclear power plants |
+| `hydroelectric` | - | Hydroelectric plants |
+| `geothermal` | - | Geothermal plants |
+| `coal` | - | Coal power plants |
+| `gas_power` | - | Gas power plants |
+| `oil_power` | - | Oil power plants |
+| `biogas` | - | Biogas plants |
+| `biomass` | - | Biomass plants |
+| `tidal` | - | Tidal power plants |
 
-**Transportation**
-- `airport` / `helipad` / `airfield` - Aviation
-- `port` / `harbour` / `ferry_terminal` - Maritime
-- `train_station` / `railyard` / `metro` - Rail
-- `bus_station` / `parking` - Ground transport
-- `bridge` / `tunnel` - Crossings
+#### Telecommunications
+| Type | Aliases | Description |
+|------|---------|-------------|
+| `telecom` | `tower` | Telecom towers |
+| `antenna` | - | Antennas |
+| `mast` | - | Communication masts |
+| `cell_tower` | - | Mobile cell towers |
+| `radio_tower` | - | Radio transmission towers |
+| `broadcast_tower` | - | TV/Radio broadcast towers |
+| `satellite_dish` | - | Satellite dishes |
+| `telephone_exchange` | - | Telephone exchanges |
+| `data_center` | `datacenter` | Data centers |
 
-**Commercial & Industrial**
-- `warehouse` / `factory` / `industrial` - Industrial
-- `quarry` / `mine` / `landfill` - Extraction/disposal
-- `fuel` / `gas_station` / `charging_station` - Fuel/energy retail
+#### Oil, Gas & Mining
+| Type | Aliases | Description |
+|------|---------|-------------|
+| `refinery` | - | Oil refineries |
+| `pipeline` | - | Pipelines |
+| `oil_well` | - | Oil extraction wells |
+| `gas_well` | - | Gas extraction wells |
+| `storage_tank` | - | Fuel/liquid storage tanks |
+| `silo` | - | Storage silos |
+| `gasometer` | - | Gas storage tanks |
+| `quarry` | `mine` | Quarries and mines |
+| `landfill` | - | Landfill sites |
+| `scrap_yard` | - | Scrap yards |
 
-**Government & Military**
-- `military` / `bunker` / `barracks` / `naval_base` - Military
-- `embassy` / `courthouse` / `border_control` - Government
-- `police` / `fire_station` / `prison` - Public safety
-- `checkpoint` / `range` - Security
+#### Water & Utilities
+| Type | Aliases | Description |
+|------|---------|-------------|
+| `water_tower` | - | Water towers |
+| `water_treatment` | - | Water treatment plants |
+| `wastewater` | `sewage`, `sewage_plant` | Wastewater plants |
+| `dam` | - | Dams |
+| `reservoir` | - | Reservoirs |
+| `pumping_station` | - | Water pumping stations |
+| `water_well` | - | Water wells |
 
-**Education & Culture**
-- `school` / `university` / `college` - Education
-- `library` / `museum` / `theatre` / `cinema` - Culture
-- `stadium` - Sports
+#### Aviation
+| Type | Aliases | Description |
+|------|---------|-------------|
+| `airport` | - | Airports |
+| `helipad` | - | Helipads |
+| `airfield` | - | Military/private airfields |
+| `runway` | - | Airport runways |
+| `taxiway` | - | Airport taxiways |
+| `terminal` | - | Airport terminals |
+| `hangar` | - | Aircraft hangars |
 
-**Healthcare**
-- `hospital` / `clinic` / `pharmacy` - Medical
-- `dentist` / `veterinary` - Specialized care
+#### Maritime
+| Type | Aliases | Description |
+|------|---------|-------------|
+| `port` | `seaport` | Ports and seaports |
+| `harbour` | - | Harbours |
+| `ferry_terminal` | - | Ferry terminals |
+| `marina` | - | Marinas |
+| `shipyard` | - | Shipyards |
+| `dock` | - | Docks |
+| `lighthouse` | - | Lighthouses |
 
-**Other**
-- `bank` / `atm` / `post_office` - Services
-- `hotel` - Accommodation
-- `church` / `mosque` / `temple` / `synagogue` - Religious
-- `cemetery` - Memorial
-- `lighthouse` / `observatory` / `radar` - Monitoring
-- `crane` / `windmill` / `watermill` - Mechanical
+#### Rail & Transit
+| Type | Aliases | Description |
+|------|---------|-------------|
+| `train_station` | - | Train stations |
+| `railyard` | `rail_yard` | Rail yards |
+| `metro` | - | Metro/subway stations |
+| `tram_stop` | - | Tram stops |
+| `halt` | - | Railway halts |
+| `level_crossing` | - | Level crossings |
+| `bus_station` | - | Bus stations |
+| `parking` | - | Parking facilities |
+| `toll_booth` | - | Toll booths |
+| `weigh_station` | - | Truck weigh stations |
+
+#### Structures
+| Type | Aliases | Description |
+|------|---------|-------------|
+| `bridge` | - | Bridges |
+| `tunnel` | - | Tunnels |
+| `cooling_tower` | - | Cooling towers |
+| `chimney` | - | Industrial chimneys |
+| `crane` | - | Cranes |
+| `windmill` | - | Windmills |
+| `watermill` | - | Watermills |
+| `clock_tower` | - | Clock towers |
+| `bell_tower` | - | Bell towers |
+
+#### Industrial & Commercial
+| Type | Aliases | Description |
+|------|---------|-------------|
+| `warehouse` | - | Warehouses |
+| `factory` | - | Factories |
+| `industrial` | - | Industrial zones |
+| `works` | - | Industrial works |
+| `depot` | - | Depots |
+| `brewery` | - | Breweries |
+| `distillery` | - | Distilleries |
+| `sawmill` | - | Sawmills |
+| `slaughterhouse` | - | Slaughterhouses |
+| `recycling_plant` | `recycling` | Recycling plants |
+
+#### Military & Defense
+| Type | Aliases | Description |
+|------|---------|-------------|
+| `military` | - | Military installations |
+| `bunker` | - | Bunkers |
+| `barracks` | - | Military barracks |
+| `naval_base` | - | Naval bases |
+| `range` | - | Firing/shooting ranges |
+| `checkpoint` | - | Military checkpoints |
+| `radar` | - | Radar installations |
+
+#### Government & Public Safety
+| Type | Aliases | Description |
+|------|---------|-------------|
+| `embassy` | - | Embassies |
+| `courthouse` | - | Courthouses |
+| `townhall` | - | Town halls |
+| `government` | - | Government offices |
+| `customs` | - | Customs offices |
+| `tax_office` | - | Tax offices |
+| `border_control` | - | Border control points |
+| `police` | - | Police stations |
+| `fire_station` | - | Fire stations |
+| `prison` | - | Prisons |
+| `ambulance_station` | - | Ambulance stations |
+| `rescue_station` | - | Rescue stations |
+| `coast_guard` | - | Coast guard stations |
+
+#### Education & Research
+| Type | Aliases | Description |
+|------|---------|-------------|
+| `school` | - | Schools |
+| `university` | - | Universities |
+| `college` | - | Colleges |
+| `kindergarten` | - | Kindergartens |
+| `driving_school` | - | Driving schools |
+| `research` | - | Research institutes |
+| `library` | - | Libraries |
+
+#### Healthcare
+| Type | Aliases | Description |
+|------|---------|-------------|
+| `hospital` | - | Hospitals |
+| `clinic` | - | Clinics |
+| `pharmacy` | - | Pharmacies |
+| `dentist` | - | Dental practices |
+| `veterinary` | - | Veterinary clinics |
+| `nursing_home` | - | Nursing homes |
+| `hospice` | - | Hospices |
+| `blood_bank` | - | Blood banks |
+
+#### Culture & Entertainment
+| Type | Aliases | Description |
+|------|---------|-------------|
+| `museum` | - | Museums |
+| `theatre` | - | Theatres |
+| `cinema` | - | Cinemas |
+| `stadium` | - | Stadiums |
+| `sports_centre` | - | Sports centres |
+| `swimming_pool` | - | Swimming pools |
+| `golf_course` | - | Golf courses |
+| `racetrack` | - | Racetracks |
+| `ice_rink` | - | Ice rinks |
+
+#### Tourism & Leisure
+| Type | Aliases | Description |
+|------|---------|-------------|
+| `hotel` | - | Hotels |
+| `campsite` | - | Campsites |
+| `caravan_site` | - | Caravan sites |
+| `theme_park` | - | Theme parks |
+| `zoo` | - | Zoos |
+| `aquarium` | - | Aquariums |
+| `viewpoint` | - | Viewpoints |
+| `attraction` | - | Tourist attractions |
+
+#### Religious
+| Type | Aliases | Description |
+|------|---------|-------------|
+| `church` | - | Churches |
+| `mosque` | - | Mosques |
+| `temple` | - | Temples |
+| `synagogue` | - | Synagogues |
+| `place_of_worship` | - | General places of worship |
+| `cemetery` | - | Cemeteries |
+
+#### Historic
+| Type | Aliases | Description |
+|------|---------|-------------|
+| `monument` | - | Monuments |
+| `memorial` | - | Memorials |
+| `castle` | - | Castles |
+| `fort` | - | Forts |
+| `ruins` | - | Ruins |
+| `archaeological_site` | - | Archaeological sites |
+| `observatory` | - | Observatories |
+
+#### Agriculture
+| Type | Aliases | Description |
+|------|---------|-------------|
+| `farm` | - | Farms |
+| `greenhouse` | - | Greenhouses |
+| `orchard` | - | Orchards |
+| `vineyard` | - | Vineyards |
+
+#### Services
+| Type | Aliases | Description |
+|------|---------|-------------|
+| `bank` | - | Banks |
+| `atm` | - | ATMs |
+| `post_office` | - | Post offices |
+| `fuel` | `gas_station`, `petrol` | Fuel stations |
+| `charging_station` | - | EV charging stations |
 
 ## Development
 

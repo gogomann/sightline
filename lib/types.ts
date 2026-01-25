@@ -424,6 +424,338 @@ export const ASSET_TYPE_MAP: Record<string, { osmTags: Record<string, string | s
   border_control: {
     osmTags: { 'barrier': 'border_control' },
     label: 'Border Control'
+  },
+  // Additional infrastructure types
+  hydroelectric: {
+    osmTags: { 'power': 'generator', 'generator:source': 'hydro' },
+    label: 'Hydroelectric Plant'
+  },
+  geothermal: {
+    osmTags: { 'power': 'generator', 'generator:source': 'geothermal' },
+    label: 'Geothermal Plant'
+  },
+  biogas: {
+    osmTags: { 'power': 'generator', 'generator:source': 'biogas' },
+    label: 'Biogas Plant'
+  },
+  biomass: {
+    osmTags: { 'power': 'generator', 'generator:source': 'biomass' },
+    label: 'Biomass Plant'
+  },
+  tidal: {
+    osmTags: { 'power': 'generator', 'generator:source': 'tidal' },
+    label: 'Tidal Power Plant'
+  },
+  coal: {
+    osmTags: { 'power': 'generator', 'generator:source': 'coal' },
+    label: 'Coal Power Plant'
+  },
+  gas_power: {
+    osmTags: { 'power': 'generator', 'generator:source': 'gas' },
+    label: 'Gas Power Plant'
+  },
+  oil_power: {
+    osmTags: { 'power': 'generator', 'generator:source': 'oil' },
+    label: 'Oil Power Plant'
+  },
+  transformer: {
+    osmTags: { 'power': 'transformer' },
+    label: 'Transformer'
+  },
+  power_line: {
+    osmTags: { 'power': 'line' },
+    label: 'Power Line'
+  },
+  power_pole: {
+    osmTags: { 'power': 'pole' },
+    label: 'Power Pole'
+  },
+  // Transportation additions
+  runway: {
+    osmTags: { 'aeroway': 'runway' },
+    label: 'Runway'
+  },
+  taxiway: {
+    osmTags: { 'aeroway': 'taxiway' },
+    label: 'Taxiway'
+  },
+  terminal: {
+    osmTags: { 'aeroway': 'terminal' },
+    label: 'Airport Terminal'
+  },
+  hangar: {
+    osmTags: { 'aeroway': 'hangar' },
+    label: 'Hangar'
+  },
+  seaport: {
+    osmTags: { 'industrial': 'port' },
+    label: 'Seaport'
+  },
+  marina: {
+    osmTags: { 'leisure': 'marina' },
+    label: 'Marina'
+  },
+  shipyard: {
+    osmTags: { 'industrial': 'shipyard' },
+    label: 'Shipyard'
+  },
+  dock: {
+    osmTags: { 'waterway': 'dock' },
+    label: 'Dock'
+  },
+  tram_stop: {
+    osmTags: { 'railway': 'tram_stop' },
+    label: 'Tram Stop'
+  },
+  halt: {
+    osmTags: { 'railway': 'halt' },
+    label: 'Railway Halt'
+  },
+  level_crossing: {
+    osmTags: { 'railway': 'level_crossing' },
+    label: 'Level Crossing'
+  },
+  toll_booth: {
+    osmTags: { 'barrier': 'toll_booth' },
+    label: 'Toll Booth'
+  },
+  weigh_station: {
+    osmTags: { 'amenity': 'weighbridge' },
+    label: 'Weigh Station'
+  },
+  // Communication
+  cell_tower: {
+    osmTags: { 'communication:mobile_phone': 'yes' },
+    label: 'Cell Tower'
+  },
+  radio_tower: {
+    osmTags: { 'man_made': 'tower', 'tower:type': 'communication' },
+    label: 'Radio Tower'
+  },
+  broadcast_tower: {
+    osmTags: { 'man_made': 'tower', 'tower:type': 'broadcast' },
+    label: 'Broadcast Tower'
+  },
+  satellite_dish: {
+    osmTags: { 'man_made': 'satellite_dish' },
+    label: 'Satellite Dish'
+  },
+  telephone_exchange: {
+    osmTags: { 'telecom': 'exchange' },
+    label: 'Telephone Exchange'
+  },
+  // Emergency Services
+  ambulance_station: {
+    osmTags: { 'emergency': 'ambulance_station' },
+    label: 'Ambulance Station'
+  },
+  emergency_phone: {
+    osmTags: { 'emergency': 'phone' },
+    label: 'Emergency Phone'
+  },
+  fire_hydrant: {
+    osmTags: { 'emergency': 'fire_hydrant' },
+    label: 'Fire Hydrant'
+  },
+  lifeguard: {
+    osmTags: { 'emergency': 'lifeguard' },
+    label: 'Lifeguard Station'
+  },
+  rescue_station: {
+    osmTags: { 'emergency': 'rescue_station' },
+    label: 'Rescue Station'
+  },
+  coast_guard: {
+    osmTags: { 'emergency': 'coast_guard' },
+    label: 'Coast Guard'
+  },
+  // Government & Administrative
+  townhall: {
+    osmTags: { 'amenity': 'townhall' },
+    label: 'Town Hall'
+  },
+  government: {
+    osmTags: { 'office': 'government' },
+    label: 'Government Office'
+  },
+  customs: {
+    osmTags: { 'office': 'customs' },
+    label: 'Customs Office'
+  },
+  tax_office: {
+    osmTags: { 'office': 'tax' },
+    label: 'Tax Office'
+  },
+  // Education additions
+  kindergarten: {
+    osmTags: { 'amenity': 'kindergarten' },
+    label: 'Kindergarten'
+  },
+  driving_school: {
+    osmTags: { 'amenity': 'driving_school' },
+    label: 'Driving School'
+  },
+  research: {
+    osmTags: { 'amenity': 'research_institute' },
+    label: 'Research Institute'
+  },
+  // Industrial additions
+  brewery: {
+    osmTags: { 'craft': 'brewery' },
+    label: 'Brewery'
+  },
+  distillery: {
+    osmTags: { 'craft': 'distillery' },
+    label: 'Distillery'
+  },
+  sawmill: {
+    osmTags: { 'craft': 'sawmill' },
+    label: 'Sawmill'
+  },
+  slaughterhouse: {
+    osmTags: { 'industrial': 'slaughterhouse' },
+    label: 'Slaughterhouse'
+  },
+  scrap_yard: {
+    osmTags: { 'industrial': 'scrap_yard' },
+    label: 'Scrap Yard'
+  },
+  depot: {
+    osmTags: { 'industrial': 'depot' },
+    label: 'Depot'
+  },
+  recycling_plant: {
+    osmTags: { 'industrial': 'recycling' },
+    label: 'Recycling Plant'
+  },
+  // Leisure & Sports
+  sports_centre: {
+    osmTags: { 'leisure': 'sports_centre' },
+    label: 'Sports Centre'
+  },
+  swimming_pool: {
+    osmTags: { 'leisure': 'swimming_pool' },
+    label: 'Swimming Pool'
+  },
+  golf_course: {
+    osmTags: { 'leisure': 'golf_course' },
+    label: 'Golf Course'
+  },
+  racetrack: {
+    osmTags: { 'leisure': 'track' },
+    label: 'Racetrack'
+  },
+  ice_rink: {
+    osmTags: { 'leisure': 'ice_rink' },
+    label: 'Ice Rink'
+  },
+  // Tourism
+  campsite: {
+    osmTags: { 'tourism': 'camp_site' },
+    label: 'Campsite'
+  },
+  caravan_site: {
+    osmTags: { 'tourism': 'caravan_site' },
+    label: 'Caravan Site'
+  },
+  theme_park: {
+    osmTags: { 'tourism': 'theme_park' },
+    label: 'Theme Park'
+  },
+  zoo: {
+    osmTags: { 'tourism': 'zoo' },
+    label: 'Zoo'
+  },
+  aquarium: {
+    osmTags: { 'tourism': 'aquarium' },
+    label: 'Aquarium'
+  },
+  viewpoint: {
+    osmTags: { 'tourism': 'viewpoint' },
+    label: 'Viewpoint'
+  },
+  attraction: {
+    osmTags: { 'tourism': 'attraction' },
+    label: 'Tourist Attraction'
+  },
+  // Healthcare additions
+  nursing_home: {
+    osmTags: { 'amenity': 'nursing_home' },
+    label: 'Nursing Home'
+  },
+  hospice: {
+    osmTags: { 'amenity': 'hospice' },
+    label: 'Hospice'
+  },
+  blood_bank: {
+    osmTags: { 'healthcare': 'blood_bank' },
+    label: 'Blood Bank'
+  },
+  // Agriculture
+  farm: {
+    osmTags: { 'landuse': 'farmland' },
+    label: 'Farm'
+  },
+  greenhouse: {
+    osmTags: { 'building': 'greenhouse' },
+    label: 'Greenhouse'
+  },
+  orchard: {
+    osmTags: { 'landuse': 'orchard' },
+    label: 'Orchard'
+  },
+  vineyard: {
+    osmTags: { 'landuse': 'vineyard' },
+    label: 'Vineyard'
+  },
+  // Other notable structures
+  monument: {
+    osmTags: { 'historic': 'monument' },
+    label: 'Monument'
+  },
+  memorial: {
+    osmTags: { 'historic': 'memorial' },
+    label: 'Memorial'
+  },
+  castle: {
+    osmTags: { 'historic': 'castle' },
+    label: 'Castle'
+  },
+  fort: {
+    osmTags: { 'historic': 'fort' },
+    label: 'Fort'
+  },
+  ruins: {
+    osmTags: { 'historic': 'ruins' },
+    label: 'Ruins'
+  },
+  archaeological_site: {
+    osmTags: { 'historic': 'archaeological_site' },
+    label: 'Archaeological Site'
+  },
+  clock_tower: {
+    osmTags: { 'man_made': 'tower', 'tower:type': 'clock' },
+    label: 'Clock Tower'
+  },
+  bell_tower: {
+    osmTags: { 'man_made': 'tower', 'tower:type': 'bell_tower' },
+    label: 'Bell Tower'
+  },
+  water_well: {
+    osmTags: { 'man_made': 'water_well' },
+    label: 'Water Well'
+  },
+  reservoir: {
+    osmTags: { 'landuse': 'reservoir' },
+    label: 'Reservoir'
+  },
+  pumping_station: {
+    osmTags: { 'man_made': 'pumping_station' },
+    label: 'Pumping Station'
+  },
+  sewage_plant: {
+    osmTags: { 'man_made': 'wastewater_plant' },
+    label: 'Sewage Plant'
   }
 };
 
