@@ -19,7 +19,7 @@ const INITIAL_QUERIES = [
   'hospitals in paris',
   'power plants in texas',
   'train stations in tokyo',
-  'universities in california',
+  'data centers in san francisco',
   'stadiums in berlin',
   'museums in rome',
   'bridges in new york',

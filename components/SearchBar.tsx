@@ -19,7 +19,6 @@ const EXAMPLE_QUERIES = [
   'hospitals in paris',
   'power plants in texas',
   'train stations in tokyo',
-  'type:university region:california'
 ];
 
 // Asset types for autocomplete
