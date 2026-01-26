@@ -4,8 +4,8 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Sightline",
-  description: "Geospatial infrastructure intelligence platform",
-  robots: "noindex, nofollow",
+  description: "Geospatial infrastructure intelligence to discover, map, and analyze infrastructure assets and risks.",
+  robots: "index, follow",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
