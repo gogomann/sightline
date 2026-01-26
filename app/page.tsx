@@ -106,7 +106,7 @@ export default function Home() {
               rel="noopener noreferrer"
               className="header-link"
             >
-              Docs
+              Source Code & Documentation
             </a>
           </div>
         </div>
