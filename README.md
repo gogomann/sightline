@@ -7,17 +7,88 @@ Geospatial infrastructure intelligence platform for discovering and analyzing ph
 
 ## Overview
 
-Sightline enables searching, monitoring, and analyzing real-world infrastructure including:
+Sightline enables searching, monitoring, and analyzing real-world infrastructure across multiple categories:
 
-- Telecommunications towers
-- Power plants and substations
+### Energy & Power
+- Power plants (nuclear, coal, gas, solar, wind, hydroelectric, geothermal)
+- Electrical substations and transformers
+- Power lines and distribution poles
+- Solar farms and wind farms
+- Dams and hydroelectric facilities
+
+### Telecommunications & Data
+- Cell towers and telecom masts
+- Broadcast towers (radio, TV)
+- Satellite dishes and antennas
 - Data centers
-- Airports and helipads
-- Ports and harbours
-- Warehouses and industrial facilities
-- Pipelines and refineries
-- Military installations
-- Hospitals, prisons, embassies
+- Telephone exchanges
+
+### Oil, Gas & Mining
+- Oil and gas refineries
+- Pipelines
+- Oil and gas wells
+- Storage tanks and silos
+- Quarries, mines, and landfills
+
+### Transportation Infrastructure
+- Airports, helipads, and airfields
+- Ports, harbours, and ferry terminals
+- Train stations and rail yards
+- Metro and bus stations
+- Parking facilities and toll booths
+
+### Maritime
+- Ports and seaports
+- Shipyards and marinas
+- Lighthouses and docks
+
+### Industrial & Commercial
+- Warehouses and factories
+- Industrial zones and depots
+- Breweries, distilleries, and sawmills
+- Recycling plants
+
+### Military & Defense
+- Military bases and installations
+- Naval bases and barracks
+- Bunkers and checkpoints
+- Radar installations
+
+### Government & Public Services
+- Embassies and consulates
+- Courthouses and town halls
+- Police and fire stations
+- Prisons and border control
+- Coast guard stations
+
+### Healthcare & Education
+- Hospitals and clinics
+- Pharmacies and nursing homes
+- Universities, colleges, and schools
+- Research institutes and libraries
+
+### Culture, Entertainment & Tourism
+- Museums, theatres, and cinemas
+- Stadiums and sports centres
+- Theme parks, zoos, and aquariums
+- Hotels and campsites
+- Golf courses and swimming pools
+
+### Religious & Historic Sites
+- Churches, mosques, temples, and synagogues
+- Cemeteries
+- Castles, forts, and monuments
+- Archaeological sites and ruins
+- Observatories
+
+### Utilities & Services
+- Water towers and treatment plants
+- Wastewater and sewage plants
+- Banks and ATMs
+- Post offices
+- Fuel stations and EV charging stations
+
+And many more asset types across 20+ categories with over 150 searchable infrastructure types.
 
 ## Architecture
 

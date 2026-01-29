@@ -1160,6 +1160,10 @@ body {
   }
 
   .header-meta .header-link {
+    padding: 8px;
+  }
+
+  .header-link-text {
     display: none;
   }
 
