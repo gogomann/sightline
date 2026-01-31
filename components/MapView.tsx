@@ -152,6 +152,15 @@ export default function MapView({
   const tileLayersRef = useRef<Map<string, L.TileLayer>>(new Map());
   const activeLayerRef = useRef<string>("osm");
 
+  // Track the source of selection to differentiate marker clicks from external selections
+  const selectionSourceRef = useRef<"marker" | "external" | null>(null);
+  // Track previous selectedId to detect actual selection changes
+  const prevSelectedIdRef = useRef<string | null>(null);
+  // Track if we've already navigated to the selected marker (prevents re-flying on pan)
+  const hasNavigatedToSelectionRef = useRef<boolean>(false);
+  // Track if user is actively interacting with the map (prevents auto-navigation interruption)
+  const userInteractingRef = useRef<boolean>(false);
+
   const filteredResults = useMemo(() => {
     let filtered = results;
 
@@ -268,11 +277,59 @@ export default function MapView({
 
     map.zoomControl.setPosition("topright");
 
+    // Track user interaction to prevent auto-navigation during pan/zoom
+    const handleInteractionStart = () => {
+      userInteractingRef.current = true;
+    };
+    const handleInteractionEnd = () => {
+      // Small delay to allow for continuous interaction detection
+      setTimeout(() => {
+        userInteractingRef.current = false;
+      }, 100);
+    };
+
+    // Close popup intelligently when marker leaves viewport after user interaction
+    // This allows small pan adjustments while viewing popup, but closes it when
+    // the user navigates far enough that the marker is no longer visible
+    const handleMoveEnd = () => {
+      handleInteractionEnd();
+
+      // Check if there's an open popup and if its marker is still visible
+      const openPopup = map
+        .getPane("popupPane")
+        ?.querySelector(".leaflet-popup");
+      if (openPopup) {
+        // Find the marker that has this popup open
+        const currentMarkers = markersRef.current;
+        for (const [, marker] of currentMarkers) {
+          if (marker.isPopupOpen()) {
+            const markerLatLng = marker.getLatLng();
+            const bounds = map.getBounds();
+
+            // Close popup if marker is outside the visible bounds
+            if (!bounds.contains(markerLatLng)) {
+              marker.closePopup();
+            }
+            break;
+          }
+        }
+      }
+    };
+
+    map.on("dragstart", handleInteractionStart);
+    map.on("zoomstart", handleInteractionStart);
+    map.on("dragend", handleMoveEnd);
+    map.on("zoomend", handleMoveEnd);
+
     mapRef.current = map;
 
     return () => {
       // Clean up all event listeners and layers properly
       map.off("baselayerchange", handleBaseLayerChange);
+      map.off("dragstart", handleInteractionStart);
+      map.off("zoomstart", handleInteractionStart);
+      map.off("dragend", handleMoveEnd);
+      map.off("zoomend", handleMoveEnd);
       tileLayersRef.current.forEach((layer) => {
         layer.off(); // Remove all layer event listeners
         layer.remove();
@@ -310,16 +367,27 @@ export default function MapView({
     `;
   }, []);
 
+  // =============================================================================
+  // EFFECT: Create and manage markers (independent of selection)
+  // =============================================================================
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
 
-    markersRef.current.forEach((marker) => marker.remove());
-    markersRef.current.clear();
+    // Capture current markers ref for cleanup (ESLint react-hooks/exhaustive-deps fix)
+    const currentMarkers = markersRef.current;
 
+    // Clear existing markers
+    currentMarkers.forEach((marker) => {
+      marker.off(); // Remove all event listeners
+      marker.remove();
+    });
+    currentMarkers.clear();
+
+    // Create new markers for filtered results
     filteredResults.forEach((asset) => {
       const marker = L.marker([asset.lat, asset.lon], {
-        icon: asset.id === selectedId ? selectedIcon : defaultIcon,
+        icon: defaultIcon,
       });
 
       marker.bindPopup(createPopupContent(asset), {
@@ -338,17 +406,23 @@ export default function MapView({
         className: "dark-popup",
         autoPan: true,
         autoPanPadding: [30, 80],
-        keepInView: true,
+        // keepInView is disabled to allow free map navigation while a marker is selected
+        // Users can pan anywhere without the map auto-snapping back to the popup
+        keepInView: false,
       });
 
+      // Handle marker click - mark selection source as "marker"
       marker.on("click", () => {
+        selectionSourceRef.current = "marker";
+        hasNavigatedToSelectionRef.current = true; // User clicked, so we're already at the marker
         onSelect(asset.id);
       });
 
       marker.addTo(map);
-      markersRef.current.set(asset.id, marker);
+      currentMarkers.set(asset.id, marker);
     });
 
+    // Fit bounds if we have results
     if (bounds && filteredResults.length > 0) {
       const latLngBounds = L.latLngBounds(
         [bounds[0], bounds[2]],
@@ -356,39 +430,115 @@ export default function MapView({
       );
       map.fitBounds(latLngBounds, { padding: [50, 50], maxZoom: 12 });
     }
-  }, [filteredResults, bounds, selectedId, onSelect, createPopupContent]);
 
+    // Cleanup function - uses captured currentMarkers variable
+    return () => {
+      currentMarkers.forEach((marker) => {
+        marker.off();
+      });
+    };
+  }, [filteredResults, bounds, onSelect, createPopupContent]);
+
+  // =============================================================================
+  // EFFECT: Handle selection changes (update icons and popups)
+  // =============================================================================
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !selectedId) return;
+    if (!map) return;
 
-    markersRef.current.forEach((marker, id) => {
+    const prevSelectedId = prevSelectedIdRef.current;
+    const selectionSource = selectionSourceRef.current;
+    const isNewSelection = prevSelectedId !== selectedId;
+
+    // Reset navigation tracking when selection actually changes
+    if (isNewSelection) {
+      hasNavigatedToSelectionRef.current = false;
+    }
+
+    // Capture current markers ref for use in this effect
+    const currentMarkers = markersRef.current;
+
+    // Update icons for all markers
+    currentMarkers.forEach((marker, id) => {
       marker.setIcon(id === selectedId ? selectedIcon : defaultIcon);
     });
 
-    const selectedMarker = markersRef.current.get(selectedId);
-    if (selectedMarker) {
-      const latLng = selectedMarker.getLatLng();
-      const targetZoom = Math.max(map.getZoom(), SELECTED_ZOOM);
-
-      // Get container size to calculate offset
-      const containerSize = map.getSize();
-
-      // Offset the view so marker appears in lower third of screen
-      // This leaves room for the popup above the marker
-      const offsetY = containerSize.y * 0.25; // 25% of screen height
-
-      // Convert the offset to lat/lng at the target zoom level
-      const targetPoint = map.project(latLng, targetZoom);
-      const offsetPoint = L.point(targetPoint.x, targetPoint.y - offsetY);
-      const offsetLatLng = map.unproject(offsetPoint, targetZoom);
-
-      map.setView(offsetLatLng, targetZoom, {
-        animate: true,
-        duration: 0.3,
-      });
-      selectedMarker.openPopup();
+    // Close previous popup if switching markers
+    if (prevSelectedId && isNewSelection) {
+      const prevMarker = currentMarkers.get(prevSelectedId);
+      if (prevMarker?.isPopupOpen()) {
+        prevMarker.closePopup();
+      }
     }
+
+    // Handle the newly selected marker
+    if (selectedId && isNewSelection) {
+      const selectedMarker = currentMarkers.get(selectedId);
+
+      if (selectedMarker) {
+        // If selection came from clicking the marker directly,
+        // Leaflet already handles the popup - we just need icons updated (done above)
+        if (selectionSource === "marker") {
+          // Marker click already opened popup via Leaflet's default behavior
+          // Mark as navigated and reset the source flag
+          hasNavigatedToSelectionRef.current = true;
+          selectionSourceRef.current = null;
+        } else {
+          // Selection came from external source (ResultList, URL, etc.)
+          // Only navigate if we haven't already and user isn't currently interacting
+          if (
+            !hasNavigatedToSelectionRef.current &&
+            !userInteractingRef.current
+          ) {
+            const latLng = selectedMarker.getLatLng();
+            const currentZoom = map.getZoom();
+            const currentBounds = map.getBounds();
+
+            // Check if marker is already visible
+            const isMarkerVisible = currentBounds.contains(latLng);
+            const isZoomedInEnough = currentZoom >= SELECTED_ZOOM;
+
+            if (isMarkerVisible && isZoomedInEnough) {
+              // Marker is visible - just open popup, no navigation needed
+              selectedMarker.openPopup();
+              hasNavigatedToSelectionRef.current = true;
+            } else {
+              // Need to fly to marker
+              const targetZoom = Math.max(currentZoom, SELECTED_ZOOM);
+
+              // Calculate offset for popup visibility
+              const containerSize = map.getSize();
+              const offsetY = containerSize.y * 0.2;
+              const targetPoint = map.project(latLng, targetZoom);
+              const offsetPoint = L.point(
+                targetPoint.x,
+                targetPoint.y - offsetY,
+              );
+              const offsetLatLng = map.unproject(offsetPoint, targetZoom);
+
+              // Mark as navigated before flying to prevent re-triggering
+              hasNavigatedToSelectionRef.current = true;
+
+              // Use flyTo for smooth animation
+              map.flyTo(offsetLatLng, targetZoom, {
+                animate: true,
+                duration: 0.5,
+              });
+
+              // Open popup after animation ends
+              const onMoveEnd = () => {
+                selectedMarker.openPopup();
+                map.off("moveend", onMoveEnd);
+              };
+              map.on("moveend", onMoveEnd);
+            }
+          }
+        }
+      }
+    }
+
+    // Update previous selection ref
+    prevSelectedIdRef.current = selectedId;
   }, [selectedId]);
 
   return (
