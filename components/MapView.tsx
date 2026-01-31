@@ -279,6 +279,7 @@ export default function MapView({
 }: MapViewProps) {
   // Cluster toggle state
   const [showClusters, setShowClusters] = useState(true);
+  const prevShowClustersRef = useRef<boolean>(true);
   // Core map instance and marker storage
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
@@ -656,8 +657,11 @@ export default function MapView({
       }
     }
 
-    // Auto-fit bounds to results whenever markers are updated (including cluster toggle)
-    if (bounds && validResults.length > 0) {
+    // Auto-fit bounds to results when markers are updated, but not when just toggling clusters
+    const isJustTogglingClusters = prevShowClustersRef.current !== showClusters && filteredResults.length === validResults.length;
+    prevShowClustersRef.current = showClusters;
+
+    if (bounds && validResults.length > 0 && !isJustTogglingClusters) {
       try {
         const latLngBounds = L.latLngBounds(
           [bounds[0], bounds[2]],
