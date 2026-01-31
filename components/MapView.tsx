@@ -8,7 +8,15 @@
  * based on dataset size, lazy popup rendering, and graceful degradation for tile failures.
  */
 
-import { useEffect, useRef, useCallback, useMemo } from "react";
+import { useEffect, useRef, useCallback, useMemo, useState } from "react";
+// Blue dot icon for non-clustered mode
+const blueDotIcon = L.divIcon({
+  className: "marker-bluedot",
+  html: '<div style="background:#2196f3;border-radius:50%;width:12px;height:12px;border:2px solid #111;"></div>',
+  iconSize: [16, 16],
+  iconAnchor: [8, 8],
+  popupAnchor: [0, -8],
+});
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet.markercluster";
@@ -269,6 +277,8 @@ export default function MapView({
   filterOperator,
   filterType,
 }: MapViewProps) {
+  // Cluster toggle state
+  const [showClusters, setShowClusters] = useState(true);
   // Core map instance and marker storage
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
@@ -485,7 +495,7 @@ export default function MapView({
     `;
   }, []);
 
-  // Marker clustering effect - recreates cluster group when results change
+  // Marker rendering effect - clusters or blue dots
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
@@ -500,11 +510,13 @@ export default function MapView({
           map.removeLayer(markerClusterRef.current);
         }
       } catch {}
+      markerClusterRef.current = null;
     }
 
     currentMarkers.forEach((marker) => {
       try {
         marker.off();
+        if (map.hasLayer(marker)) map.removeLayer(marker);
       } catch {}
     });
     currentMarkers.clear();
@@ -514,106 +526,137 @@ export default function MapView({
     );
 
     if (validResults.length === 0) {
-      markerClusterRef.current = null;
       return;
     }
 
-    const config = getClusterConfig(validResults.length);
-
-    const markerCluster = L.markerClusterGroup({
-      chunkedLoading: true,
-      chunkInterval: config.chunkInterval,
-      chunkDelay: config.chunkDelay,
-      showCoverageOnHover: false,
-      spiderfyOnMaxZoom: true,
-      spiderfyDistanceMultiplier: config.spiderfyDistanceMultiplier,
-      disableClusteringAtZoom: config.disableClusteringAtZoom,
-      maxClusterRadius: config.maxClusterRadius,
-      animate: config.animate,
-      animateAddingMarkers: config.animateAddingMarkers,
-      removeOutsideVisibleBounds: true,
-      spiderLegPolylineOptions: {
-        weight: 1.5,
-        color: "#30363d",
-        opacity: 0.6,
-      },
-      iconCreateFunction: (cluster) => {
-        const count = cluster.getChildCount();
-        const size = getClusterSize(count);
-        const dimensions = CLUSTER_DIMENSIONS[size];
-        const formattedCount = formatClusterCount(count);
-
-        return L.divIcon({
-          html: `<div class="cluster-icon" role="img" aria-label="${count} markers in this cluster"><span>${formattedCount}</span></div>`,
-          className: `marker-cluster marker-cluster-${size}`,
-          iconSize: L.point(dimensions, dimensions),
-        });
-      },
-    });
-
-    markerClusterRef.current = markerCluster;
-
-    // Create markers and add to cluster
-    const markersToAdd: L.Marker[] = [];
-
-    for (const asset of validResults) {
-      try {
-        const marker = L.marker([asset.lat, asset.lon], {
-          icon: defaultIcon,
-          keyboard: true,
-        });
-
-        marker.bindPopup(() => createPopupContent(asset), {
-          maxWidth:
-            typeof window !== "undefined" && window.innerWidth < 768
-              ? Math.min(window.innerWidth - 60, 280)
-              : 300,
-          minWidth:
-            typeof window !== "undefined" && window.innerWidth < 768
-              ? Math.min(window.innerWidth - 60, 250)
-              : 200,
-          maxHeight:
-            typeof window !== "undefined" && window.innerWidth < 768
-              ? Math.floor(window.innerHeight * 0.5)
-              : 400,
-          className: "dark-popup",
-          autoPan: true,
-          autoPanPadding: [30, 80],
-          keepInView: false,
-        });
-
-        marker.on("click", () => {
-          if (!isMapMountedRef.current) return;
-          selectionSourceRef.current = "marker";
-          hasNavigatedToSelectionRef.current = true;
-          onSelect(asset.id);
-        });
-
-        markersToAdd.push(marker);
-        currentMarkers.set(asset.id, marker);
-      } catch {
-        if (process.env.NODE_ENV === "development") {
-          console.warn(`Failed to create marker for asset: ${asset.id}`);
+    if (showClusters) {
+      const config = getClusterConfig(validResults.length);
+      const markerCluster = L.markerClusterGroup({
+        chunkedLoading: true,
+        chunkInterval: config.chunkInterval,
+        chunkDelay: config.chunkDelay,
+        showCoverageOnHover: false,
+        spiderfyOnMaxZoom: true,
+        spiderfyDistanceMultiplier: config.spiderfyDistanceMultiplier,
+        disableClusteringAtZoom: config.disableClusteringAtZoom,
+        maxClusterRadius: config.maxClusterRadius,
+        animate: config.animate,
+        animateAddingMarkers: config.animateAddingMarkers,
+        removeOutsideVisibleBounds: true,
+        spiderLegPolylineOptions: {
+          weight: 1.5,
+          color: "#30363d",
+          opacity: 0.6,
+        },
+        iconCreateFunction: (cluster) => {
+          const count = cluster.getChildCount();
+          const size = getClusterSize(count);
+          const dimensions = CLUSTER_DIMENSIONS[size];
+          const formattedCount = formatClusterCount(count);
+          return L.divIcon({
+            html: `<div class=\"cluster-icon\" role=\"img\" aria-label=\"${count} markers in this cluster\"><span>${formattedCount}</span></div>`,
+            className: `marker-cluster marker-cluster-${size}`,
+            iconSize: L.point(dimensions, dimensions),
+          });
+        },
+      });
+      markerClusterRef.current = markerCluster;
+      const markersToAdd: L.Marker[] = [];
+      for (const asset of validResults) {
+        try {
+          const marker = L.marker([asset.lat, asset.lon], {
+            icon: defaultIcon,
+            keyboard: true,
+          });
+          marker.bindPopup(() => createPopupContent(asset), {
+            maxWidth:
+              typeof window !== "undefined" && window.innerWidth < 768
+                ? Math.min(window.innerWidth - 60, 280)
+                : 300,
+            minWidth:
+              typeof window !== "undefined" && window.innerWidth < 768
+                ? Math.min(window.innerWidth - 60, 250)
+                : 200,
+            maxHeight:
+              typeof window !== "undefined" && window.innerWidth < 768
+                ? Math.floor(window.innerHeight * 0.5)
+                : 400,
+            className: "dark-popup",
+            autoPan: true,
+            autoPanPadding: [30, 80],
+            keepInView: false,
+          });
+          marker.on("click", () => {
+            if (!isMapMountedRef.current) return;
+            selectionSourceRef.current = "marker";
+            hasNavigatedToSelectionRef.current = true;
+            onSelect(asset.id);
+          });
+          markersToAdd.push(marker);
+          currentMarkers.set(asset.id, marker);
+        } catch {
+          if (process.env.NODE_ENV === "development") {
+            console.warn(`Failed to create marker for asset: ${asset.id}`);
+          }
+        }
+      }
+      if (markersToAdd.length > 0) {
+        try {
+          markerCluster.addLayers(markersToAdd);
+        } catch {
+          markersToAdd.forEach((marker) => {
+            try {
+              markerCluster.addLayer(marker);
+            } catch {}
+          });
+        }
+      }
+      if (markerCluster && isMapMountedRef.current) {
+        map.addLayer(markerCluster);
+      }
+    } else {
+      // Show blue dots for all points, no clustering
+      for (const asset of validResults) {
+        try {
+          const marker = L.marker([asset.lat, asset.lon], {
+            icon: blueDotIcon,
+            keyboard: true,
+          });
+          marker.bindPopup(() => createPopupContent(asset), {
+            maxWidth:
+              typeof window !== "undefined" && window.innerWidth < 768
+                ? Math.min(window.innerWidth - 60, 280)
+                : 300,
+            minWidth:
+              typeof window !== "undefined" && window.innerWidth < 768
+                ? Math.min(window.innerWidth - 60, 250)
+                : 200,
+            maxHeight:
+              typeof window !== "undefined" && window.innerWidth < 768
+                ? Math.floor(window.innerHeight * 0.5)
+                : 400,
+            className: "dark-popup",
+            autoPan: true,
+            autoPanPadding: [30, 80],
+            keepInView: false,
+          });
+          marker.on("click", () => {
+            if (!isMapMountedRef.current) return;
+            selectionSourceRef.current = "marker";
+            hasNavigatedToSelectionRef.current = true;
+            onSelect(asset.id);
+          });
+          marker.addTo(map);
+          currentMarkers.set(asset.id, marker);
+        } catch {
+          if (process.env.NODE_ENV === "development") {
+            console.warn(`Failed to create marker for asset: ${asset.id}`);
+          }
         }
       }
     }
 
-    if (markersToAdd.length > 0) {
-      try {
-        markerCluster.addLayers(markersToAdd);
-      } catch {
-        markersToAdd.forEach((marker) => {
-          try {
-            markerCluster.addLayer(marker);
-          } catch {}
-        });
-      }
-    }
-
-    if (markerCluster && isMapMountedRef.current) {
-      map.addLayer(markerCluster);
-    }
-
+    // Auto-fit bounds to results whenever markers are updated (including cluster toggle)
     if (bounds && validResults.length > 0) {
       try {
         const latLngBounds = L.latLngBounds(
@@ -634,6 +677,7 @@ export default function MapView({
       currentMarkers.forEach((marker) => {
         try {
           marker.off();
+          if (map.hasLayer(marker)) map.removeLayer(marker);
         } catch {}
       });
       if (markerClusterRef.current) {
@@ -645,7 +689,7 @@ export default function MapView({
         } catch {}
       }
     };
-  }, [filteredResults, bounds, onSelect, createPopupContent]);
+  }, [filteredResults, bounds, onSelect, createPopupContent, showClusters]);
 
   // Selection handling effect - updates marker icons and manages popup/navigation
   useEffect(() => {
@@ -732,6 +776,45 @@ export default function MapView({
 
   return (
     <div className="map-container">
+      {/* Cluster toggle below the layer selector (topleft) */}
+      <div
+        style={{
+          position: "absolute",
+          zIndex: 401,
+          left: 12,
+          top: 62,
+          minWidth: 0,
+          background: "#0e0e0e",
+          borderRadius: 4,
+          boxShadow: "0 1px 4px 0 rgba(0,0,0,0.08)",
+          border: "1px solid #bbb",
+          padding: "3px 8px 3px 6px",
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+          fontSize: 13,
+          fontWeight: 400,
+          lineHeight: 1.2,
+        }}
+      >
+        <input
+          id="cluster-toggle"
+          type="checkbox"
+          checked={showClusters}
+          onChange={e => setShowClusters(e.target.checked)}
+          style={{
+            accentColor: '#2196f3',
+            width: 15,
+            height: 15,
+            marginRight: 5,
+            cursor: 'pointer',
+            verticalAlign: 'middle',
+          }}
+        />
+        <label htmlFor="cluster-toggle" style={{ cursor: 'pointer', userSelect: 'none', color: '#ffffff', letterSpacing: 0, padding: 0, margin: 0 }}>
+          <span style={{ verticalAlign: 'middle' }}>Cluster Markers</span>
+        </label>
+      </div>
       <div ref={containerRef} className="map-inner" />
       {filteredResults.length === 0 && results.length > 0 && (
         <div className="map-overlay">
