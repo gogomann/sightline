@@ -656,8 +656,22 @@ export default function MapView({
       }
     }
 
-    // Only auto-fit bounds when filteredResults or bounds change, not when toggling clusters
-    // This effect will not run on cluster toggle alone
+    // Auto-fit bounds to results whenever markers are updated (including cluster toggle)
+    if (bounds && validResults.length > 0) {
+      try {
+        const latLngBounds = L.latLngBounds(
+          [bounds[0], bounds[2]],
+          [bounds[1], bounds[3]],
+        );
+        if (latLngBounds.isValid()) {
+          map.fitBounds(latLngBounds, {
+            padding: [50, 50],
+            maxZoom: 12,
+            animate: validResults.length < CLUSTER_THRESHOLDS.LARGE,
+          });
+        }
+      } catch {}
+    }
 
     return () => {
       currentMarkers.forEach((marker) => {
