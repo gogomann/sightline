@@ -789,16 +789,16 @@ export default function MapView({
           left: 12,
           bottom: 12,
           minWidth: 0,
-          background: "#0e0e0e",
-          borderRadius: 4,
-          boxShadow: "0 1px 4px 0 rgba(0,0,0,0.08)",
-          border: "1px solid #bbb",
-          padding: "3px 8px 3px 6px",
+          background: "#161b22",
+          borderRadius: 6,
+          boxShadow: "0 2px 8px 0 rgba(0,0,0,0.3)",
+          border: "1px solid #30363d",
+          padding: "6px 10px",
           display: "flex",
           alignItems: "center",
-          gap: 6,
+          gap: 8,
           fontSize: 13,
-          fontWeight: 400,
+          fontWeight: 500,
           lineHeight: 1.2,
         }}
       >
@@ -808,15 +808,14 @@ export default function MapView({
           checked={showClusters}
           onChange={e => setShowClusters(e.target.checked)}
           style={{
-            accentColor: '#2196f3',
-            width: 15,
-            height: 15,
-            marginRight: 5,
+            accentColor: '#58a6ff',
+            width: 16,
+            height: 16,
             cursor: 'pointer',
             verticalAlign: 'middle',
           }}
         />
-        <label htmlFor="cluster-toggle" style={{ cursor: 'pointer', userSelect: 'none', color: '#ffffff', letterSpacing: 0, padding: 0, margin: 0 }}>
+        <label htmlFor="cluster-toggle" style={{ cursor: 'pointer', userSelect: 'none', color: '#e6edf3', letterSpacing: '-0.01em', padding: 0, margin: 0 }}>
           <span style={{ verticalAlign: 'middle' }}>Cluster Markers</span>
         </label>
       </div>
