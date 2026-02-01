@@ -3,7 +3,7 @@
 Geospatial infrastructure intelligence platform for discovering and analyzing physical-world assets using OpenStreetMap data.
 
 
-![img](https://files.catbox.moe/anbo1t.png)
+![screenshot](screenshots/screenshot.png)
 
 ## Overview
 
