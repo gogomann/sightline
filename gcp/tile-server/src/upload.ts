@@ -155,7 +155,7 @@ export async function handlePresignRequest(req: Request, res: Response): Promise
       expires: Date.now() + SIGNED_URL_EXPIRES_MINUTES * 60 * 1000,
       contentType: mime,
       extensionHeaders: {
-        // Maximale Dateigröße über Custom Header erzwingen
+        // Maximale Dateigröße über Custom Header erzwingen test
         'x-goog-meta-max-size': String(maxSize),
         'x-goog-meta-submission-id': submissionId ?? 'standalone',
         'x-goog-meta-uploaded-by-ip': ip,
