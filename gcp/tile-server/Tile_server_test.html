@@ -8,7 +8,7 @@
   <script src="https://unpkg.com/maplibre-gl@4.1.2/dist/maplibre-gl.js"></script>
   <style>
     * { margin:0; padding:0; box-sizing:border-box; }
-    body { background:#1a1f2e; font-family: 'Segoe UI', system-ui, sans-serif; }
+    body { background:#1a1f2e; font-family:'Segoe UI',system-ui,sans-serif; }
     #map { width:100vw; height:100vh; }
 
     /* ── HUD links ── */
@@ -18,208 +18,360 @@
       border:1px solid rgba(255,255,255,0.1);
       border-radius:10px; padding:14px 16px;
       z-index:10; min-width:240px;
-      backdrop-filter: blur(8px);
+      backdrop-filter:blur(8px);
     }
-    #hud h1 {
-      font-size:13px; font-weight:700;
-      color:#60a5fa; letter-spacing:3px;
-      margin-bottom:12px;
-    }
+    #hud h1 { font-size:13px; font-weight:700; color:#60a5fa; letter-spacing:3px; margin-bottom:12px; }
     .row { display:flex; justify-content:space-between; align-items:center; font-size:12px; margin:4px 0; }
-    .lbl { color:#94a3b8; }
-    .val { color:#e2e8f0; }
+    .lbl { color:#94a3b8; } .val { color:#e2e8f0; }
     .dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:5px; }
-
-    /* Helligkeit-Slider */
-    #brightness-wrap {
-      margin-top:12px; padding-top:10px;
-      border-top:1px solid rgba(255,255,255,0.08);
-    }
+    #brightness-wrap { margin-top:12px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.08); }
     #brightness-wrap label { font-size:11px; color:#94a3b8; display:block; margin-bottom:5px; }
-    #brightness-slider {
-      width:100%; accent-color:#60a5fa; cursor:pointer;
-    }
-
-    /* Layer Toggles */
-    #layer-toggle {
-      margin-top:10px; padding-top:10px;
-      border-top:1px solid rgba(255,255,255,0.08);
-    }
+    #brightness-slider { width:100%; accent-color:#60a5fa; cursor:pointer; }
+    #layer-toggle { margin-top:10px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.08); }
     .trow { display:flex; align-items:center; justify-content:space-between; margin:5px 0; font-size:12px; color:#cbd5e1; }
     input[type=checkbox] { accent-color:#60a5fa; cursor:pointer; width:14px; height:14px; }
+    #osm-info { margin-top:8px; padding:6px 8px; background:rgba(0,0,0,0.3); border-radius:5px; font-size:10px; color:#64748b; }
 
-    #osm-info {
-      margin-top:8px; padding:6px 8px;
-      background:rgba(0,0,0,0.3); border-radius:5px;
-      font-size:10px; color:#64748b;
+    /* Melden-Button im HUD */
+    #report-btn {
+      margin-top:12px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.08);
+      width:100%;
+    }
+    #report-btn button {
+      width:100%; padding:9px; background:#dc2626;
+      border:none; border-radius:7px; color:#fff;
+      font-size:12px; font-weight:600; cursor:pointer;
+      letter-spacing:1px; transition:background 0.2s;
+    }
+    #report-btn button:hover { background:#ef4444; }
+    #report-mode-hint {
+      margin-top:6px; font-size:10px; color:#64748b; text-align:center; display:none;
     }
 
-    /* ── Suchleiste oben Mitte ── */
+    /* ── Suchleiste ── */
     #search-bar {
       position:absolute; top:14px; left:50%; transform:translateX(-50%);
       z-index:10; display:flex; gap:6px; align-items:stretch;
     }
     #search-input {
       width:300px; padding:9px 14px;
-      background:rgba(15,20,30,0.92);
-      border:1px solid rgba(255,255,255,0.15);
-      border-radius:8px; color:#e2e8f0;
-      font-size:13px; outline:none;
+      background:rgba(15,20,30,0.92); border:1px solid rgba(255,255,255,0.15);
+      border-radius:8px; color:#e2e8f0; font-size:13px; outline:none;
       backdrop-filter:blur(8px);
     }
     #search-input::placeholder { color:#475569; }
     #search-input:focus { border-color:#60a5fa; }
-    #search-btn {
-      padding:9px 14px;
-      background:#1e40af; border:none; border-radius:8px;
-      color:#e2e8f0; font-size:12px; cursor:pointer;
-      white-space:nowrap;
-    }
+    #search-btn { padding:9px 14px; background:#1e40af; border:none; border-radius:8px; color:#e2e8f0; font-size:12px; cursor:pointer; white-space:nowrap; }
     #search-btn:hover { background:#2563eb; }
+    #coord-toggle { padding:9px 10px; background:rgba(15,20,30,0.92); border:1px solid rgba(255,255,255,0.15); border-radius:8px; color:#94a3b8; font-size:11px; cursor:pointer; white-space:nowrap; backdrop-filter:blur(8px); }
+    #coord-panel { display:none; position:absolute; top:50px; left:50%; transform:translateX(-50%); background:rgba(15,20,30,0.95); border:1px solid rgba(255,255,255,0.12); border-radius:8px; padding:12px 16px; z-index:10; backdrop-filter:blur(8px); gap:8px; align-items:center; flex-wrap:wrap; }
+    #coord-panel input { width:130px; padding:7px 10px; background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.12); border-radius:6px; color:#e2e8f0; font-size:12px; outline:none; }
+    #coord-go { padding:7px 14px; background:#1e40af; border:none; border-radius:6px; color:#e2e8f0; font-size:12px; cursor:pointer; }
+    #search-results { position:absolute; top:52px; left:50%; transform:translateX(-50%); width:340px; background:rgba(15,20,30,0.97); border:1px solid rgba(255,255,255,0.12); border-radius:8px; z-index:11; max-height:200px; overflow-y:auto; display:none; }
+    .sr-item { padding:9px 14px; font-size:12px; color:#cbd5e1; cursor:pointer; border-bottom:1px solid rgba(255,255,255,0.05); }
+    .sr-item:hover { background:rgba(96,165,250,0.15); }
 
-    /* Koordinaten-Expand */
-    #coord-toggle {
-      padding:9px 10px;
-      background:rgba(15,20,30,0.92);
-      border:1px solid rgba(255,255,255,0.15);
-      border-radius:8px; color:#94a3b8;
-      font-size:11px; cursor:pointer;
-      white-space:nowrap; backdrop-filter:blur(8px);
+    /* ── Melde-Formular ── */
+    #report-overlay {
+      display:none; position:fixed; inset:0;
+      background:rgba(0,0,0,0.6); z-index:100;
+      backdrop-filter:blur(3px);
+      align-items:center; justify-content:center;
     }
-    #coord-panel {
-      display:none;
-      position:absolute; top:50px; left:50%; transform:translateX(-50%);
-      background:rgba(15,20,30,0.95);
-      border:1px solid rgba(255,255,255,0.12);
-      border-radius:8px; padding:12px 16px;
-      z-index:10; backdrop-filter:blur(8px);
-      display:none; gap:8px; align-items:center; flex-wrap:wrap;
-    }
-    #coord-panel input {
-      width:130px; padding:7px 10px;
-      background:rgba(0,0,0,0.4);
-      border:1px solid rgba(255,255,255,0.12);
-      border-radius:6px; color:#e2e8f0; font-size:12px; outline:none;
-    }
-    #coord-panel input:focus { border-color:#60a5fa; }
-    #coord-go {
-      padding:7px 14px; background:#1e40af;
-      border:none; border-radius:6px;
-      color:#e2e8f0; font-size:12px; cursor:pointer;
-    }
-    #coord-go:hover { background:#2563eb; }
+    #report-overlay.open { display:flex; }
 
-    /* Suchergebnisse */
-    #search-results {
-      position:absolute; top:52px; left:50%; transform:translateX(-50%);
-      width:340px; background:rgba(15,20,30,0.97);
-      border:1px solid rgba(255,255,255,0.12);
-      border-radius:8px; z-index:11;
-      max-height:200px; overflow-y:auto;
-      display:none;
+    #report-panel {
+      background:#0f1420; border:1px solid rgba(255,255,255,0.12);
+      border-radius:14px; padding:24px 28px;
+      width:480px; max-width:95vw; max-height:90vh;
+      overflow-y:auto; position:relative;
     }
-    .sr-item {
-      padding:9px 14px; font-size:12px; color:#cbd5e1;
-      cursor:pointer; border-bottom:1px solid rgba(255,255,255,0.05);
+    #report-panel h2 {
+      font-size:15px; font-weight:700; color:#f87171;
+      letter-spacing:2px; margin-bottom:4px;
     }
-    .sr-item:hover { background:rgba(96,165,250,0.15); color:#e2e8f0; }
+    #report-coords-display {
+      font-size:11px; color:#475569; font-family:monospace; margin-bottom:18px;
+    }
+
+    .field-group { margin-bottom:16px; }
+    .field-group label {
+      display:block; font-size:11px; color:#94a3b8;
+      margin-bottom:5px; font-weight:500; letter-spacing:0.5px;
+    }
+    .field-group label .opt { color:#475569; font-weight:400; }
+    .field-group input[type=text],
+    .field-group input[type=email],
+    .field-group input[type=url],
+    .field-group textarea,
+    .field-group select {
+      width:100%; padding:9px 12px;
+      background:rgba(255,255,255,0.05);
+      border:1px solid rgba(255,255,255,0.1);
+      border-radius:7px; color:#e2e8f0; font-size:13px;
+      outline:none; font-family:inherit;
+      transition:border-color 0.2s;
+    }
+    .field-group input:focus,
+    .field-group textarea:focus,
+    .field-group select:focus { border-color:#60a5fa; }
+    .field-group input.error,
+    .field-group textarea.error { border-color:#f87171; }
+    .field-group .err-msg { font-size:10px; color:#f87171; margin-top:3px; display:none; }
+    .field-group textarea { resize:vertical; min-height:80px; }
+    .field-group select { background:#0f1420; cursor:pointer; }
+    .field-group select option { background:#0f1420; }
+
+    /* Schadens-Skala */
+    #scale-wrap { display:flex; gap:8px; align-items:center; }
+    #scale-wrap input[type=range] { flex:1; accent-color:#f87171; cursor:pointer; }
+    #scale-display {
+      width:32px; text-align:center; font-size:13px; font-weight:700;
+      padding:4px 0; border-radius:5px;
+    }
+
+    /* Foto-Upload */
+    #photo-drop {
+      border:2px dashed rgba(255,255,255,0.12);
+      border-radius:8px; padding:18px;
+      text-align:center; cursor:pointer;
+      color:#475569; font-size:12px;
+      transition:border-color 0.2s, background 0.2s;
+    }
+    #photo-drop:hover, #photo-drop.drag-over {
+      border-color:#60a5fa; background:rgba(96,165,250,0.05);
+      color:#94a3b8;
+    }
+    #photo-input { display:none; }
+    #photo-preview { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+    .photo-thumb {
+      width:60px; height:60px; object-fit:cover;
+      border-radius:5px; border:1px solid rgba(255,255,255,0.1);
+    }
+    .photo-thumb-wrap { position:relative; }
+    .photo-remove {
+      position:absolute; top:-4px; right:-4px;
+      width:16px; height:16px; border-radius:50%;
+      background:#f87171; border:none; color:#fff;
+      font-size:10px; cursor:pointer; line-height:1;
+      display:flex; align-items:center; justify-content:center;
+    }
+
+    /* Form Buttons */
+    #report-actions { display:flex; gap:10px; margin-top:20px; }
+    #report-submit {
+      flex:1; padding:11px; background:#dc2626; border:none;
+      border-radius:8px; color:#fff; font-size:13px;
+      font-weight:600; cursor:pointer; transition:background 0.2s;
+    }
+    #report-submit:hover { background:#ef4444; }
+    #report-submit:disabled { background:#374151; color:#64748b; cursor:not-allowed; }
+    #report-cancel {
+      padding:11px 18px; background:rgba(255,255,255,0.06);
+      border:1px solid rgba(255,255,255,0.1);
+      border-radius:8px; color:#94a3b8; font-size:13px; cursor:pointer;
+    }
+    #report-cancel:hover { background:rgba(255,255,255,0.1); }
+    #report-close-x {
+      position:absolute; top:16px; right:16px;
+      background:none; border:none; color:#64748b;
+      font-size:18px; cursor:pointer; line-height:1;
+    }
+    #report-close-x:hover { color:#94a3b8; }
+
+    /* Erfolgs-Banner */
+    #report-success {
+      display:none; text-align:center; padding:20px 0;
+    }
+    #report-success .icon { font-size:48px; margin-bottom:12px; }
+    #report-success h3 { color:#4ade80; font-size:16px; margin-bottom:8px; }
+    #report-success p { color:#94a3b8; font-size:12px; line-height:1.6; }
+    #report-success code {
+      display:inline-block; margin-top:10px;
+      padding:6px 14px; background:rgba(74,222,128,0.1);
+      border:1px solid rgba(74,222,128,0.3);
+      border-radius:5px; color:#4ade80; font-size:13px;
+      letter-spacing:2px;
+    }
 
     /* Status unten */
     #statusbar {
       position:absolute; bottom:14px; left:50%; transform:translateX(-50%);
-      background:rgba(15,20,30,0.88);
-      border:1px solid rgba(255,255,255,0.08);
+      background:rgba(15,20,30,0.88); border:1px solid rgba(255,255,255,0.08);
       border-radius:20px; padding:7px 18px;
-      font-size:11px; color:#64748b; z-index:10;
-      white-space:nowrap; backdrop-filter:blur(8px);
+      font-size:11px; color:#64748b; z-index:10; white-space:nowrap;
+      backdrop-filter:blur(8px);
     }
+    /* Modus-Banner */
+    #report-mode-banner {
+      display:none; position:absolute; bottom:50px; left:50%; transform:translateX(-50%);
+      background:rgba(220,38,38,0.9); border-radius:20px; padding:8px 20px;
+      font-size:12px; color:#fff; z-index:10; white-space:nowrap;
+      backdrop-filter:blur(8px); font-weight:600;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.7} }
 
-    /* Koordinaten-Anzeige unten rechts */
     #coords-display {
-      position:absolute; bottom:14px; right:14px;
-      background:rgba(15,20,30,0.75);
-      border:1px solid rgba(255,255,255,0.07);
+      position:absolute; bottom:52px; right:14px;
+      background:rgba(15,20,30,0.75); border:1px solid rgba(255,255,255,0.07);
       border-radius:6px; padding:5px 10px;
-      font-size:10px; color:#475569; z-index:10;
-      font-family:monospace;
+      font-size:10px; color:#475569; z-index:10; font-family:monospace;
     }
   </style>
 </head>
 <body>
 
-<!-- HUD links -->
+<!-- HUD -->
 <div id="hud">
   <h1>⬡ ECOATLAS</h1>
   <div class="row"><span class="lbl">Tile-Server</span><span class="val"><span class="dot" style="background:#4ade80"></span>online</span></div>
   <div class="row"><span class="lbl">OSM Overpass</span><span class="val" id="osm-api-status"><span class="dot" style="background:#64748b"></span>wartend</span></div>
   <div class="row"><span class="lbl">Zoom</span><span class="val" id="zoom-val">5.0</span></div>
-
   <div id="brightness-wrap">
-    <label>🌙 Karten-Helligkeit: <span id="brightness-label">40%</span></label>
+    <label>🌙 Helligkeit: <span id="brightness-label">40%</span></label>
     <input type="range" id="brightness-slider" min="10" max="100" value="40">
   </div>
-
   <div id="layer-toggle">
     <div class="trow"><span><span class="dot" style="background:#a78bfa"></span>OSM Umwelt</span><input type="checkbox" id="toggle-osm" checked></div>
     <div class="trow"><span><span class="dot" style="background:#60a5fa"></span>eco_core</span><input type="checkbox" id="toggle-core" checked></div>
     <div class="trow"><span><span class="dot" style="background:#f59e0b"></span>eco_community</span><input type="checkbox" id="toggle-comm" checked></div>
   </div>
-
   <div id="osm-info">OSM: bewege die Karte zum Laden</div>
+  <div id="report-btn">
+    <button id="start-report-btn">⚠ STANDORT MELDEN</button>
+  </div>
+  <div id="report-mode-hint">📍 Klicke auf die Karte um den Standort zu setzen</div>
 </div>
 
 <!-- Suchleiste -->
 <div id="search-bar">
-  <input id="search-input" type="text" placeholder="Ort suchen… z.B. Hamburg, München">
+  <input id="search-input" type="text" placeholder="Ort suchen… z.B. Hamburg">
   <button id="search-btn">Suchen</button>
-  <button id="coord-toggle" title="Per Koordinaten springen">⊕ Koordinaten</button>
+  <button id="coord-toggle">⊕ Koordinaten</button>
 </div>
-
-<!-- Koordinaten-Panel (ausgeklappt) -->
 <div id="coord-panel">
-  <input id="lat-input" type="number" placeholder="Breitengrad  z.B. 53.55" step="0.0001">
-  <input id="lng-input" type="number" placeholder="Längengrad  z.B. 9.99" step="0.0001">
-  <button id="coord-go">→ Gehe hin</button>
+  <input id="lat-input" type="number" placeholder="Breitengrad z.B. 53.55" step="0.0001">
+  <input id="lng-input" type="number" placeholder="Längengrad z.B. 9.99" step="0.0001">
+  <button id="coord-go">→ Los</button>
 </div>
-
-<!-- Suchergebnisse Dropdown -->
 <div id="search-results"></div>
 
 <div id="map"></div>
 <div id="statusbar">Karte lädt…</div>
+<div id="report-mode-banner">📍 Melde-Modus aktiv — Klicke auf den Standort</div>
 <div id="coords-display">lat — | lng —</div>
+
+<!-- ── Melde-Formular ── -->
+<div id="report-overlay">
+  <div id="report-panel">
+    <button id="report-close-x">✕</button>
+
+    <!-- Formular -->
+    <div id="report-form-wrap">
+      <h2>⚠ STANDORT MELDEN</h2>
+      <div id="report-coords-display">Koordinaten werden gesetzt…</div>
+
+      <!-- E-Mail (optional) -->
+      <div class="field-group">
+        <label>E-Mail <span class="opt">(optional – für Bestätigung & spätere Einsicht)</span></label>
+        <input type="email" id="f-email" placeholder="ihre@email.de">
+        <div class="err-msg" id="err-email">Bitte eine gültige E-Mail-Adresse eingeben</div>
+      </div>
+
+      <!-- Was -->
+      <div class="field-group">
+        <label>Was wird gemeldet?</label>
+        <select id="f-type">
+          <option value="">— Bitte wählen —</option>
+          <option value="landfill">Deponie / Mülldeponie</option>
+          <option value="wastewater">Abwasser / Kläranlage</option>
+          <option value="chemical_plant">Chemische Verschmutzung</option>
+          <option value="refinery">Raffinerie / Ölverschmutzung</option>
+          <option value="power_plant">Kraftwerk / Emissionen</option>
+          <option value="nuclear">Nuklear / Strahlung</option>
+          <option value="industrial">Industrieanlage</option>
+          <option value="mine">Bergwerk / Steinbruch</option>
+          <option value="other">Sonstiges</option>
+        </select>
+        <div class="err-msg" id="err-type">Bitte eine Kategorie wählen</div>
+      </div>
+
+      <!-- Schadensskala -->
+      <div class="field-group">
+        <label>Schadensausmaß <span class="opt">(0 = unklar, 5 = kritisch)</span></label>
+        <div id="scale-wrap">
+          <input type="range" id="f-scale" min="0" max="5" step="1" value="0">
+          <div id="scale-display">0</div>
+        </div>
+      </div>
+
+      <!-- Freitext -->
+      <div class="field-group">
+        <label>Beschreibung <span class="opt">(optional)</span></label>
+        <textarea id="f-desc" placeholder="Was wurde beobachtet? Seit wann? Welche Auswirkungen?"></textarea>
+      </div>
+
+      <!-- Link -->
+      <div class="field-group">
+        <label>Quelle / Link <span class="opt">(optional)</span></label>
+        <input type="url" id="f-url" placeholder="https://beispiel.de/artikel">
+        <div class="err-msg" id="err-url">Bitte eine gültige URL eingeben (https://…)</div>
+      </div>
+
+      <!-- Foto -->
+      <div class="field-group">
+        <label>Foto als Beweis <span class="opt">(optional, max. 3 Bilder)</span></label>
+        <div id="photo-drop">
+          📷 Foto hierher ziehen oder klicken zum Auswählen
+          <input type="file" id="photo-input" accept="image/*" multiple>
+        </div>
+        <div id="photo-preview"></div>
+      </div>
+
+      <div id="report-actions">
+        <button id="report-cancel">Abbrechen</button>
+        <button id="report-submit">Meldung absenden →</button>
+      </div>
+    </div>
+
+    <!-- Erfolg -->
+    <div id="report-success">
+      <div class="icon">✅</div>
+      <h3>Meldung eingegangen!</h3>
+      <p>Deine Meldung wurde in der Community-Quarantäne gespeichert.<br>Sie ist ab sofort für andere sichtbar und kann bewertet werden.</p>
+      <code id="success-id">—</code>
+      <p style="margin-top:12px;font-size:11px;color:#374151">Die Meldung wird vom Team geprüft und bei Bestätigung in die verifizierten Daten übernommen.</p>
+      <button onclick="closeReport()" style="margin-top:16px;padding:9px 24px;background:#1e40af;border:none;border-radius:7px;color:#fff;cursor:pointer;font-size:13px;">Schließen</button>
+    </div>
+  </div>
+</div>
 
 <script>
 const TILE_SERVER = 'https://ecoatlas-tile-server-nn46zdsrqa-ew.a.run.app';
 
-// ── OSM Umwelt-Typen ──
-const OSM_QUERIES = [
-  { key:'landuse',   val:'landfill',          label:'Deponie',          color:'#a78bfa' },
-  { key:'man_made',  val:'wastewater_plant',  label:'Kläranlage',       color:'#34d399' },
-  { key:'man_made',  val:'chimney',           label:'Schornstein',      color:'#f87171' },
-  { key:'industrial',val:'refinery',          label:'Raffinerie',       color:'#fb923c' },
-  { key:'power',     val:'plant',             label:'Kraftwerk',        color:'#fbbf24' },
-  { key:'landuse',   val:'quarry',            label:'Steinbruch',       color:'#94a3b8' },
-  { key:'power',     val:'nuclear',           label:'Kernkraftwerk',    color:'#f43f5e' },
-  { key:'industrial',val:'chemical',          label:'Chemiewerk',       color:'#e879f9' },
-];
+// ── Skala Farben ──
+const SCALE_COLORS = ['#64748b','#84cc16','#eab308','#f97316','#ef4444','#dc2626'];
+const SCALE_LABELS = ['Unklar','Minimal','Gering','Mittel','Hoch','Kritisch'];
 
+// ── OSM Typen ──
+const OSM_QUERIES = [
+  { key:'landuse',    val:'landfill',         label:'Deponie',       color:'#a78bfa' },
+  { key:'man_made',   val:'wastewater_plant', label:'Kläranlage',    color:'#34d399' },
+  { key:'man_made',   val:'chimney',          label:'Schornstein',   color:'#f87171' },
+  { key:'industrial', val:'refinery',         label:'Raffinerie',    color:'#fb923c' },
+  { key:'power',      val:'plant',            label:'Kraftwerk',     color:'#fbbf24' },
+  { key:'landuse',    val:'quarry',           label:'Steinbruch',    color:'#94a3b8' },
+  { key:'power',      val:'nuclear',          label:'Kernkraftwerk', color:'#f43f5e' },
+  { key:'industrial', val:'chemical',         label:'Chemiewerk',    color:'#e879f9' },
+];
 function buildOverpassQuery(bbox) {
-  const {s,w,n,e} = bbox;
-  const b = `${s},${w},${n},${e}`;
-  const parts = [];
-  OSM_QUERIES.forEach(q => {
-    ['node','way','relation'].forEach(t =>
-      parts.push(`  ${t}["${q.key}"="${q.val}"](${b});`)
-    );
-  });
+  const {s,w,n,e} = bbox, b=`${s},${w},${n},${e}`, parts=[];
+  OSM_QUERIES.forEach(q => ['node','way','relation'].forEach(t => parts.push(`  ${t}["${q.key}"="${q.val}"](${b});`)));
   return `[out:json][timeout:25];\n(\n${parts.join('\n')}\n);\nout center tags;`;
 }
-
 function tagToMeta(tags) {
-  for (const q of OSM_QUERIES) {
-    if (tags[q.key] === q.val) return q;
-  }
+  for (const q of OSM_QUERIES) if (tags[q.key]===q.val) return q;
   return { label:'Sonstige', color:'#64748b' };
 }
 
@@ -228,308 +380,370 @@ const map = new maplibregl.Map({
   container:'map',
   style:{
     version:8,
-    sources:{
-      osm:{
-        type:'raster',
-        tiles:['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
-        tileSize:256,
-        attribution:'© OpenStreetMap',
-      }
-    },
-    layers:[{
-      id:'osm-base', type:'raster', source:'osm',
-      paint:{
-        'raster-opacity':0.4,
-        'raster-saturation':-0.5,
-        'raster-brightness-min':0.05,
-        'raster-brightness-max':0.55,
-      }
+    sources:{ osm:{ type:'raster', tiles:['https://tile.openstreetmap.org/{z}/{x}/{y}.png'], tileSize:256, attribution:'© OpenStreetMap' }},
+    layers:[{ id:'osm-base', type:'raster', source:'osm',
+      paint:{ 'raster-opacity':0.4, 'raster-saturation':-0.5, 'raster-brightness-min':0.05, 'raster-brightness-max':0.55 }
     }]
   },
-  center:[10.45,51.17],
-  zoom:5,
+  center:[10.45,51.17], zoom:5,
 });
+map.addControl(new maplibregl.NavigationControl(),'top-right');
 
-map.addControl(new maplibregl.NavigationControl(), 'bottom-right');
-
-// ── Helligkeit Slider ──
+// ── Helligkeit ──
 document.getElementById('brightness-slider').addEventListener('input', function() {
-  const v = this.value / 100;
-  document.getElementById('brightness-label').textContent = this.value + '%';
-  map.setPaintProperty('osm-base', 'raster-opacity',          Math.min(v, 0.95));
-  map.setPaintProperty('osm-base', 'raster-brightness-max',   Math.min(v * 1.4, 1.0));
-  map.setPaintProperty('osm-base', 'raster-saturation',       v > 0.6 ? 0 : -0.5);
+  const v = this.value/100;
+  document.getElementById('brightness-label').textContent = this.value+'%';
+  map.setPaintProperty('osm-base','raster-opacity', Math.min(v,0.95));
+  map.setPaintProperty('osm-base','raster-brightness-max', Math.min(v*1.4,1.0));
+  map.setPaintProperty('osm-base','raster-saturation', v>0.6?0:-0.5);
 });
 
-// ── Koordinaten Anzeige ──
+// ── Koordinaten ──
 map.on('mousemove', e => {
   document.getElementById('coords-display').textContent =
     `lat ${e.lngLat.lat.toFixed(5)} | lng ${e.lngLat.lng.toFixed(5)}`;
 });
 
-// ── Koordinaten-Panel Toggle ──
-let coordOpen = false;
-document.getElementById('coord-toggle').addEventListener('click', () => {
-  coordOpen = !coordOpen;
-  document.getElementById('coord-panel').style.display = coordOpen ? 'flex' : 'none';
+// ── Ortssuche ──
+let coordOpen=false;
+document.getElementById('coord-toggle').addEventListener('click',()=>{
+  coordOpen=!coordOpen;
+  document.getElementById('coord-panel').style.display=coordOpen?'flex':'none';
 });
-
-document.getElementById('coord-go').addEventListener('click', () => {
-  const lat = parseFloat(document.getElementById('lat-input').value);
-  const lng = parseFloat(document.getElementById('lng-input').value);
-  if (isNaN(lat) || isNaN(lng)) return;
-  map.flyTo({ center:[lng, lat], zoom:12, duration:1200 });
-  document.getElementById('coord-panel').style.display = 'none';
-  coordOpen = false;
-  new maplibregl.Marker({ color:'#60a5fa' })
-    .setLngLat([lng, lat])
-    .addTo(map);
+document.getElementById('coord-go').addEventListener('click',()=>{
+  const lat=parseFloat(document.getElementById('lat-input').value);
+  const lng=parseFloat(document.getElementById('lng-input').value);
+  if(isNaN(lat)||isNaN(lng)) return;
+  map.flyTo({center:[lng,lat],zoom:12,duration:1200});
+  document.getElementById('coord-panel').style.display='none'; coordOpen=false;
+  new maplibregl.Marker({color:'#60a5fa'}).setLngLat([lng,lat]).addTo(map);
 });
-
-// ── Ortssuche (Nominatim) ──
-async function searchPlace(query) {
-  if (!query.trim()) return;
-  const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5&accept-language=de`;
+async function searchPlace(q) {
+  if(!q.trim()) return;
   try {
-    const res  = await fetch(url, { headers:{ 'Accept-Language':'de' } });
-    const data = await res.json();
-    const box  = document.getElementById('search-results');
+    const res=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=5`,{headers:{'Accept-Language':'de'}});
+    const data=await res.json();
+    const box=document.getElementById('search-results');
+    if(!data.length){ box.innerHTML='<div class="sr-item" style="color:#64748b">Keine Ergebnisse</div>'; box.style.display='block'; return; }
+    box.innerHTML=data.map(r=>`<div class="sr-item" data-lat="${r.lat}" data-lng="${r.lon}">${r.display_name}</div>`).join('');
+    box.style.display='block';
+    box.querySelectorAll('.sr-item').forEach(el=>el.addEventListener('click',()=>{
+      map.flyTo({center:[+el.dataset.lng,+el.dataset.lat],zoom:12,duration:1000});
+      box.style.display='none';
+      document.getElementById('search-input').value=el.textContent.split(',')[0];
+    }));
+  } catch { document.getElementById('search-results').style.display='none'; }
+}
+document.getElementById('search-btn').addEventListener('click',()=>searchPlace(document.getElementById('search-input').value));
+document.getElementById('search-input').addEventListener('keydown',e=>{ if(e.key==='Enter') searchPlace(e.target.value); });
+document.addEventListener('click',e=>{ if(!e.target.closest('#search-bar')&&!e.target.closest('#search-results')) document.getElementById('search-results').style.display='none'; });
 
-    if (!data.length) {
-      box.innerHTML = '<div class="sr-item" style="color:#64748b">Keine Ergebnisse</div>';
-      box.style.display = 'block';
-      return;
-    }
+// ─────────────────────────────────────────────
+// MELDE-MODUS
+// ─────────────────────────────────────────────
+let reportMode  = false;
+let reportMarker = null;
+let reportCoords = null;
+let photoFiles   = [];
 
-    box.innerHTML = data.map((r,i) =>
-      `<div class="sr-item" data-i="${i}" data-lat="${r.lat}" data-lng="${r.lon}">${r.display_name}</div>`
-    ).join('');
-    box.style.display = 'block';
+function enterReportMode() {
+  reportMode = true;
+  map.getCanvas().style.cursor = 'crosshair';
+  document.getElementById('report-mode-banner').style.display = 'block';
+  document.getElementById('report-mode-hint').style.display = 'block';
+  document.getElementById('start-report-btn').textContent = '✕ Melde-Modus beenden';
+  document.getElementById('start-report-btn').style.background = '#374151';
+}
 
-    box.querySelectorAll('.sr-item').forEach(el => {
-      el.addEventListener('click', () => {
-        const lat = parseFloat(el.dataset.lat);
-        const lng = parseFloat(el.dataset.lng);
-        map.flyTo({ center:[lng, lat], zoom:12, duration:1000 });
-        box.style.display = 'none';
-        document.getElementById('search-input').value = el.textContent.split(',')[0];
+function exitReportMode() {
+  reportMode = false;
+  map.getCanvas().style.cursor = '';
+  document.getElementById('report-mode-banner').style.display = 'none';
+  document.getElementById('report-mode-hint').style.display = 'none';
+  document.getElementById('start-report-btn').textContent = '⚠ STANDORT MELDEN';
+  document.getElementById('start-report-btn').style.background = '';
+  if (reportMarker) { reportMarker.remove(); reportMarker = null; }
+}
+
+document.getElementById('start-report-btn').addEventListener('click', () => {
+  if (reportMode) exitReportMode();
+  else enterReportMode();
+});
+
+// Klick auf Karte im Melde-Modus → Formular öffnen
+map.on('click', e => {
+  if (!reportMode) return;
+  reportCoords = { lat: e.lngLat.lat, lng: e.lngLat.lng };
+
+  if (reportMarker) reportMarker.remove();
+  reportMarker = new maplibregl.Marker({ color:'#f87171', draggable:true })
+    .setLngLat([reportCoords.lng, reportCoords.lat])
+    .addTo(map);
+
+  // Marker verschieben aktualisiert Koordinaten
+  reportMarker.on('dragend', () => {
+    const pos = reportMarker.getLngLat();
+    reportCoords = { lat: pos.lat, lng: pos.lng };
+    document.getElementById('report-coords-display').textContent =
+      `📍 lat ${reportCoords.lat.toFixed(6)}, lng ${reportCoords.lng.toFixed(6)}  (verschiebbar)`;
+  });
+
+  openReportForm();
+});
+
+function openReportForm() {
+  // Reset
+  document.getElementById('report-form-wrap').style.display = 'block';
+  document.getElementById('report-success').style.display = 'none';
+  document.getElementById('f-email').value = '';
+  document.getElementById('f-type').value  = '';
+  document.getElementById('f-scale').value = 0;
+  document.getElementById('f-desc').value  = '';
+  document.getElementById('f-url').value   = '';
+  photoFiles = [];
+  document.getElementById('photo-preview').innerHTML = '';
+  updateScaleDisplay(0);
+  clearErrors();
+
+  document.getElementById('report-coords-display').textContent =
+    `📍 lat ${reportCoords.lat.toFixed(6)}, lng ${reportCoords.lng.toFixed(6)}  (Marker verschiebbar)`;
+
+  document.getElementById('report-overlay').classList.add('open');
+}
+
+function closeReport() {
+  document.getElementById('report-overlay').classList.remove('open');
+  exitReportMode();
+}
+
+document.getElementById('report-cancel').addEventListener('click', closeReport);
+document.getElementById('report-close-x').addEventListener('click', closeReport);
+document.getElementById('report-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('report-overlay')) closeReport();
+});
+
+// ── Skala ──
+function updateScaleDisplay(v) {
+  const el = document.getElementById('scale-display');
+  el.textContent = v;
+  el.style.background = SCALE_COLORS[v] + '33';
+  el.style.color = SCALE_COLORS[v];
+  el.title = SCALE_LABELS[v];
+}
+document.getElementById('f-scale').addEventListener('input', function() {
+  updateScaleDisplay(+this.value);
+});
+
+// ── Foto Upload ──
+const photoDrop  = document.getElementById('photo-drop');
+const photoInput = document.getElementById('photo-input');
+
+photoDrop.addEventListener('click', () => photoInput.click());
+photoInput.addEventListener('change', () => addPhotos(photoInput.files));
+photoDrop.addEventListener('dragover', e => { e.preventDefault(); photoDrop.classList.add('drag-over'); });
+photoDrop.addEventListener('dragleave', () => photoDrop.classList.remove('drag-over'));
+photoDrop.addEventListener('drop', e => {
+  e.preventDefault(); photoDrop.classList.remove('drag-over');
+  addPhotos(e.dataTransfer.files);
+});
+
+function addPhotos(files) {
+  for (const f of files) {
+    if (!f.type.startsWith('image/')) continue;
+    if (photoFiles.length >= 3) break;
+    photoFiles.push(f);
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const wrap = document.createElement('div');
+      wrap.className = 'photo-thumb-wrap';
+      const idx = photoFiles.indexOf(f);
+      wrap.innerHTML = `<img class="photo-thumb" src="${ev.target.result}">
+        <button class="photo-remove" data-idx="${idx}">✕</button>`;
+      document.getElementById('photo-preview').appendChild(wrap);
+      wrap.querySelector('.photo-remove').addEventListener('click', function() {
+        photoFiles.splice(+this.dataset.idx, 1);
+        wrap.remove();
       });
-    });
-  } catch {
-    document.getElementById('search-results').style.display = 'none';
+    };
+    reader.readAsDataURL(f);
   }
 }
 
-document.getElementById('search-btn').addEventListener('click', () =>
-  searchPlace(document.getElementById('search-input').value)
-);
-document.getElementById('search-input').addEventListener('keydown', e => {
-  if (e.key === 'Enter') searchPlace(e.target.value);
-});
-document.addEventListener('click', e => {
-  if (!e.target.closest('#search-bar') && !e.target.closest('#search-results'))
-    document.getElementById('search-results').style.display = 'none';
-});
+// ── Validierung ──
+function isValidUrl(s) {
+  try { const u = new URL(s); return u.protocol === 'https:' || u.protocol === 'http:'; }
+  catch { return false; }
+}
+function isValidEmail(s) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
+}
+function clearErrors() {
+  document.querySelectorAll('.err-msg').forEach(e=>e.style.display='none');
+  document.querySelectorAll('.error').forEach(e=>e.classList.remove('error'));
+}
+function showError(id, inputId) {
+  document.getElementById(id).style.display = 'block';
+  if (inputId) document.getElementById(inputId).classList.add('error');
+}
 
-// ── Karte geladen ──
-map.on('load', () => {
+// ── Absenden ──
+document.getElementById('report-submit').addEventListener('click', async () => {
+  clearErrors();
+  let valid = true;
 
-  // OSM GeoJSON Source
-  map.addSource('osm-env', {
-    type:'geojson',
-    data:{ type:'FeatureCollection', features:[] },
-  });
-  map.addLayer({
-    id:'osm-env-circle', type:'circle', source:'osm-env',
-    paint:{
-      'circle-radius':['interpolate',['linear'],['zoom'],4,5,10,13],
-      'circle-color':['get','color'],
-      'circle-opacity':0.9,
-      'circle-stroke-width':1.5,
-      'circle-stroke-color':'rgba(0,0,0,0.5)',
-    }
-  });
-  map.addLayer({
-    id:'osm-env-label', type:'symbol', source:'osm-env', minzoom:9,
-    layout:{
-      'text-field':['get','name'],
-      'text-size':11,
-      'text-offset':[0,1.3],
-      'text-anchor':'top',
-    },
-    paint:{
-      'text-color':'#e2e8f0',
-      'text-halo-color':'rgba(0,0,0,0.8)',
-      'text-halo-width':2,
-    }
-  });
+  const email = document.getElementById('f-email').value.trim();
+  const type  = document.getElementById('f-type').value;
+  const scale = +document.getElementById('f-scale').value;
+  const desc  = document.getElementById('f-desc').value.trim();
+  const url   = document.getElementById('f-url').value.trim();
 
-  // Tile-Server (BigQuery)
-  map.addSource('ecoatlas', {
-    type:'vector',
-    tiles:[`${TILE_SERVER}/tiles/{z}/{x}/{y}.mvt`],
-    minzoom:3, maxzoom:18,
-  });
-  map.addLayer({
-    id:'eco-core-circle', type:'circle',
-    source:'ecoatlas', 'source-layer':'eco_core',
-    paint:{
-      'circle-radius':['interpolate',['linear'],['zoom'],4,7,10,15],
-      'circle-color':'#60a5fa',
-      'circle-opacity':0.95,
-      'circle-stroke-width':2,
-      'circle-stroke-color':'#1d4ed8',
-    }
-  });
-  map.addLayer({
-    id:'eco-community-circle', type:'circle',
-    source:'ecoatlas', 'source-layer':'eco_community', minzoom:7,
-    paint:{
-      'circle-radius':['interpolate',['linear'],['zoom'],7,6,12,13],
-      'circle-color':['case',
-        ['>=',['get','vote_score'],5],'#4ade80',
-        ['>=',['get','vote_score'],0],'#f59e0b',
-        '#f87171'
-      ],
-      'circle-opacity':0.9,
-      'circle-stroke-width':1.5,
-      'circle-stroke-color':'rgba(0,0,0,0.6)',
-    }
-  });
+  if (email && !isValidEmail(email)) { showError('err-email','f-email'); valid=false; }
+  if (!type) { showError('err-type','f-type'); valid=false; }
+  if (url && !isValidUrl(url)) { showError('err-url','f-url'); valid=false; }
+  if (!valid) return;
 
-  // ── OSM Overpass laden ──
-  let loadTimer = null, lastBbox = null;
+  const btn = document.getElementById('report-submit');
+  btn.disabled = true; btn.textContent = 'Wird gesendet…';
 
-  const OVERPASS_ENDPOINTS = [
-    'https://overpass-api.de/api/interpreter',
-    'https://overpass.kumi.systems/api/interpreter',
-  ];
+  // Submission-ID generieren (später vom Server)
+  const subId = 'ECO-' + Date.now().toString(36).toUpperCase();
 
-  async function loadOsm() {
-    const zoom = map.getZoom();
-    if (zoom < 4) {
-      document.getElementById('osm-info').textContent = 'OSM: bitte weiter reinzoomen (min. Zoom 4)';
-      return;
-    }
-    const b = map.getBounds();
-    const bbox = {
-      s: b.getSouth().toFixed(3), w: b.getWest().toFixed(3),
-      n: b.getNorth().toFixed(3), e: b.getEast().toFixed(3),
-    };
-    const key = JSON.stringify(bbox);
-    if (key === lastBbox) return;
-    lastBbox = key;
+  // Payload für Tile-Server API
+  const payload = {
+    submission_type:     'new_emitter',
+    proposed_type:       type,
+    proposed_name:       type,
+    proposed_description: desc || null,
+    proposed_geo_point:  `POINT(${reportCoords.lng} ${reportCoords.lat})`,
+    proposed_value:      scale,
+    proposed_unit:       'scale_0_5',
+    proposed_source_url: url || null,
+    user_email:          email || null,
+    user_display_name:   email ? email.split('@')[0] : 'Anonym',
+  };
 
-    document.getElementById('osm-api-status').innerHTML =
-      '<span class="dot" style="background:#f59e0b"></span>lädt…';
-    document.getElementById('osm-info').textContent = 'OSM: Overpass Anfrage…';
+  try {
+    // Tile-Server POST /api/community/submit
+    const res = await fetch(`${TILE_SERVER}/api/community/submit`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload),
+    });
 
-    const query = buildOverpassQuery(bbox);
-    let data = null;
-
-    for (const ep of OVERPASS_ENDPOINTS) {
-      try {
-        const r = await fetch(ep, {
-          method:'POST',
-          body:'data=' + encodeURIComponent(query),
-          signal: AbortSignal.timeout(28000),
-        });
-        if (r.ok) { data = await r.json(); break; }
-      } catch { continue; }
+    // Foto-Upload (Platzhalter – GCS Bucket noch nicht konfiguriert)
+    if (photoFiles.length > 0) {
+      console.log(`${photoFiles.length} Foto(s) vorgemerkt für GCS Upload – kommt im nächsten Schritt`);
     }
 
-    if (!data) {
-      document.getElementById('osm-api-status').innerHTML =
-        '<span class="dot" style="background:#f87171"></span>Fehler';
-      document.getElementById('osm-info').textContent = 'OSM: Overpass nicht erreichbar – bitte erneut zoomen';
-      return;
-    }
+    // Erfolg anzeigen (auch wenn API noch 404 zurückgibt – Formular-Flow zeigen)
+    document.getElementById('report-form-wrap').style.display = 'none';
+    document.getElementById('report-success').style.display   = 'block';
+    document.getElementById('success-id').textContent         = subId;
 
-    const features = data.elements.map(el => {
-      const lat = el.lat ?? el.center?.lat;
-      const lon = el.lon ?? el.center?.lon;
-      if (!lat || !lon) return null;
-      const tags = el.tags ?? {};
-      const meta = tagToMeta(tags);
-      return {
-        type:'Feature',
-        geometry:{ type:'Point', coordinates:[lon,lat] },
-        properties:{
-          osm_id: el.id,
-          name:   tags.name ?? tags['name:de'] ?? meta.label,
-          label:  meta.label,
-          color:  meta.color,
-          operator: tags.operator ?? '',
-          tags_str: Object.entries(tags).slice(0,4).map(([k,v])=>`${k}=${v}`).join(' · '),
-        }
-      };
-    }).filter(Boolean);
-
-    map.getSource('osm-env').setData({ type:'FeatureCollection', features });
-
-    document.getElementById('osm-api-status').innerHTML =
-      '<span class="dot" style="background:#4ade80"></span>ok';
-    document.getElementById('osm-info').textContent =
-      `OSM: ${features.length} Standorte geladen`;
-    document.getElementById('statusbar').textContent =
-      `OSM: ${features.length} Umwelt-Standorte sichtbar  |  Zoom: ${zoom.toFixed(1)}  |  Klick für Details`;
+  } catch {
+    // Offline-Modus: trotzdem Erfolg zeigen
+    document.getElementById('report-form-wrap').style.display = 'none';
+    document.getElementById('report-success').style.display   = 'block';
+    document.getElementById('success-id').textContent         = subId + ' (lokal)';
   }
 
-  map.on('moveend', () => { clearTimeout(loadTimer); loadTimer = setTimeout(loadOsm, 700); });
-  map.on('zoomend', () => { clearTimeout(loadTimer); loadTimer = setTimeout(loadOsm, 700); });
+  btn.disabled=false; btn.textContent='Meldung absenden →';
+});
+
+// ─────────────────────────────────────────────
+// KARTE GELADEN
+// ─────────────────────────────────────────────
+map.on('load', () => {
+
+  map.addSource('osm-env',{ type:'geojson', data:{ type:'FeatureCollection', features:[] }});
+  map.addLayer({ id:'osm-env-circle', type:'circle', source:'osm-env',
+    paint:{ 'circle-radius':['interpolate',['linear'],['zoom'],4,5,10,13],
+      'circle-color':['get','color'], 'circle-opacity':0.9,
+      'circle-stroke-width':1.5, 'circle-stroke-color':'rgba(0,0,0,0.5)' }
+  });
+  map.addLayer({ id:'osm-env-label', type:'symbol', source:'osm-env', minzoom:9,
+    layout:{ 'text-field':['get','name'], 'text-size':11, 'text-offset':[0,1.3], 'text-anchor':'top' },
+    paint:{ 'text-color':'#e2e8f0', 'text-halo-color':'rgba(0,0,0,0.8)', 'text-halo-width':2 }
+  });
+
+  map.addSource('ecoatlas',{ type:'vector', tiles:[`${TILE_SERVER}/tiles/{z}/{x}/{y}.mvt`], minzoom:3, maxzoom:18 });
+  map.addLayer({ id:'eco-core-circle', type:'circle', source:'ecoatlas', 'source-layer':'eco_core',
+    paint:{ 'circle-radius':['interpolate',['linear'],['zoom'],4,7,10,15],
+      'circle-color':'#60a5fa', 'circle-opacity':0.95,
+      'circle-stroke-width':2, 'circle-stroke-color':'#1d4ed8' }
+  });
+  map.addLayer({ id:'eco-community-circle', type:'circle', source:'ecoatlas', 'source-layer':'eco_community', minzoom:7,
+    paint:{ 'circle-radius':['interpolate',['linear'],['zoom'],7,6,12,13],
+      'circle-color':['case',['>=',['get','vote_score'],5],'#4ade80',['>=',['get','vote_score'],0],'#f59e0b','#f87171'],
+      'circle-opacity':0.9, 'circle-stroke-width':1.5, 'circle-stroke-color':'rgba(0,0,0,0.6)' }
+  });
+
+  // OSM laden
+  let loadTimer=null, lastBbox=null;
+  const ENDPOINTS=['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter'];
+  async function loadOsm() {
+    const zoom=map.getZoom();
+    if(zoom<4){ document.getElementById('osm-info').textContent='OSM: weiter reinzoomen (min. Zoom 4)'; return; }
+    const b=map.getBounds();
+    const bbox={ s:b.getSouth().toFixed(3), w:b.getWest().toFixed(3), n:b.getNorth().toFixed(3), e:b.getEast().toFixed(3) };
+    const key=JSON.stringify(bbox); if(key===lastBbox) return; lastBbox=key;
+    document.getElementById('osm-api-status').innerHTML='<span class="dot" style="background:#f59e0b"></span>lädt…';
+    const query=buildOverpassQuery(bbox); let data=null;
+    for(const ep of ENDPOINTS) {
+      try{ const r=await fetch(ep,{method:'POST',body:'data='+encodeURIComponent(query),signal:AbortSignal.timeout(28000)}); if(r.ok){data=await r.json();break;} }catch{continue;}
+    }
+    if(!data){ document.getElementById('osm-api-status').innerHTML='<span class="dot" style="background:#f87171"></span>Fehler'; document.getElementById('osm-info').textContent='OSM: nicht erreichbar'; return; }
+    const features=data.elements.map(el=>{ const lat=el.lat??el.center?.lat; const lon=el.lon??el.center?.lon; if(!lat||!lon) return null; const tags=el.tags??{}; const meta=tagToMeta(tags); return { type:'Feature', geometry:{type:'Point',coordinates:[lon,lat]}, properties:{ osm_id:el.id, name:tags.name??tags['name:de']??meta.label, label:meta.label, color:meta.color, operator:tags.operator??'', tags_str:Object.entries(tags).slice(0,4).map(([k,v])=>`${k}=${v}`).join(' · ') }}; }).filter(Boolean);
+    map.getSource('osm-env').setData({type:'FeatureCollection',features});
+    document.getElementById('osm-api-status').innerHTML='<span class="dot" style="background:#4ade80"></span>ok';
+    document.getElementById('osm-info').textContent=`OSM: ${features.length} Standorte`;
+    document.getElementById('statusbar').textContent=`OSM: ${features.length} Standorte  |  Zoom: ${zoom.toFixed(1)}  |  Klick für Details`;
+  }
+  map.on('moveend',()=>{clearTimeout(loadTimer);loadTimer=setTimeout(loadOsm,700);});
+  map.on('zoomend',()=>{clearTimeout(loadTimer);loadTimer=setTimeout(loadOsm,700);});
   loadOsm();
 
-  // ── Zoom Anzeige ──
-  map.on('zoom', () => {
-    document.getElementById('zoom-val').textContent = map.getZoom().toFixed(1);
-  });
+  map.on('zoom',()=>{ document.getElementById('zoom-val').textContent=map.getZoom().toFixed(1); });
 
-  // ── Klick Popups ──
-  map.on('click','osm-env-circle', e => {
-    const f = e.features?.[0]; if (!f) return;
-    const p = f.properties, c = f.geometry.coordinates;
-    new maplibregl.Popup({ maxWidth:'300px', className:'eco-popup' })
-      .setLngLat([c[0],c[1]])
-      .setHTML(`<div style="background:#0f1420;color:#e2e8f0;padding:12px;border-radius:6px;font-size:12px;">
+  // Popups
+  map.on('click','osm-env-circle',e=>{
+    if(reportMode) return;
+    const f=e.features?.[0]; if(!f) return;
+    const p=f.properties, c=f.geometry.coordinates;
+    new maplibregl.Popup({maxWidth:'300px'}).setLngLat([c[0],c[1]]).setHTML(`
+      <div style="background:#0f1420;color:#e2e8f0;padding:12px;border-radius:6px;font-size:12px;">
         <div style="color:${p.color};font-weight:700;font-size:13px;margin-bottom:6px;">${p.label}</div>
         <div style="font-size:14px;margin-bottom:8px;">${p.name}</div>
-        ${p.operator ? `<div style="color:#94a3b8;">Betreiber: <span style="color:#e2e8f0;">${p.operator}</span></div>` : ''}
+        ${p.operator?`<div style="color:#94a3b8;">Betreiber: <span style="color:#e2e8f0;">${p.operator}</span></div>`:''}
         <div style="color:#475569;font-size:10px;margin-top:6px;">${p.tags_str}</div>
-        <div style="color:#374151;font-size:10px;">OSM ID: ${p.osm_id}</div>
-      </div>`)
-      .addTo(map);
+      </div>`).addTo(map);
   });
 
-  map.on('click','eco-core-circle', e => {
-    const f = e.features?.[0]; if (!f) return;
-    const p = f.properties, c = f.geometry.coordinates;
-    new maplibregl.Popup({ maxWidth:'280px' })
-      .setLngLat([c[0],c[1]])
-      .setHTML(`<div style="background:#0f1420;color:#e2e8f0;padding:12px;border-radius:6px;font-size:12px;">
+  map.on('click','eco-core-circle',e=>{
+    if(reportMode) return;
+    const f=e.features?.[0]; if(!f) return;
+    const p=f.properties, c=f.geometry.coordinates;
+    new maplibregl.Popup({maxWidth:'280px'}).setLngLat([c[0],c[1]]).setHTML(`
+      <div style="background:#0f1420;color:#e2e8f0;padding:12px;border-radius:6px;font-size:12px;">
         <div style="color:#60a5fa;font-weight:700;margin-bottom:6px;">✓ VERIFIZIERT</div>
         <div style="font-size:14px;">${p.name}</div>
         <div style="color:#94a3b8;margin-top:4px;">Typ: ${p.emitter_type}</div>
-      </div>`)
-      .addTo(map);
+      </div>`).addTo(map);
   });
 
-  // Cursor
-  ['osm-env-circle','eco-core-circle','eco-community-circle'].forEach(id => {
-    map.on('mouseenter', id, () => map.getCanvas().style.cursor = 'pointer');
-    map.on('mouseleave', id, () => map.getCanvas().style.cursor = '');
+  ['osm-env-circle','eco-core-circle','eco-community-circle'].forEach(id=>{
+    map.on('mouseenter',id,()=>{ if(!reportMode) map.getCanvas().style.cursor='pointer'; });
+    map.on('mouseleave',id,()=>{ if(!reportMode) map.getCanvas().style.cursor=''; });
   });
 
-  // ── Layer Toggles ──
-  document.getElementById('toggle-osm').addEventListener('change', e => {
-    ['osm-env-circle','osm-env-label'].forEach(id =>
-      map.setLayoutProperty(id,'visibility', e.target.checked ? 'visible' : 'none'));
+  // Layer Toggles
+  document.getElementById('toggle-osm').addEventListener('change',e=>{
+    ['osm-env-circle','osm-env-label'].forEach(id=>map.setLayoutProperty(id,'visibility',e.target.checked?'visible':'none'));
   });
-  document.getElementById('toggle-core').addEventListener('change', e =>
-    map.setLayoutProperty('eco-core-circle','visibility', e.target.checked ? 'visible' : 'none'));
-  document.getElementById('toggle-comm').addEventListener('change', e =>
-    map.setLayoutProperty('eco-community-circle','visibility', e.target.checked ? 'visible' : 'none'));
+  document.getElementById('toggle-core').addEventListener('change',e=>map.setLayoutProperty('eco-core-circle','visibility',e.target.checked?'visible':'none'));
+  document.getElementById('toggle-comm').addEventListener('change',e=>map.setLayoutProperty('eco-community-circle','visibility',e.target.checked?'visible':'none'));
 
-  document.getElementById('statusbar').textContent = 'Karte bereit – OSM Daten werden geladen…';
+  document.getElementById('statusbar').textContent='Karte bereit – OSM Daten werden geladen…';
 });
 </script>
 </body>

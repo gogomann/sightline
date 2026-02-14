@@ -29,6 +29,8 @@ import {
   emitterCacheKey,
   submissionCacheKey,
 } from './cache';
+import { handlePresignRequest, handleUploadConfirm, handleUploadStatus } from './upload';
+
 
 const app = express();
 const PORT = parseInt(process.env.PORT ?? '8080', 10);
@@ -105,6 +107,10 @@ app.get('/tiles/:z/:x/:y.mvt', async (req: Request, res: Response, next: NextFun
     next(err);
   }
 });
+
+app.post('/upload/presign', handlePresignRequest);
+app.post('/upload/confirm', handleUploadConfirm);
+app.get('/upload/status/*', handleUploadStatus);
 
 // ----------------------------------------------------------------
 // Emitter Detail: /api/emitter/{id}
