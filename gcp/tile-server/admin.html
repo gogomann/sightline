@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>EcoAtlas Admin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://accounts.google.com/gsi/client" async></script>
+  <style>
+    :root {
+      --bg:       #080c14;
+      --surface:  #0d1320;
+      --border:   rgba(255,255,255,0.07);
+      --border2:  rgba(255,255,255,0.12);
+      --text:     #e2e8f0;
+      --muted:    #64748b;
+      --dim:      #94a3b8;
+      --accent:   #3b82f6;
+      --green:    #22c55e;
+      --yellow:   #eab308;
+      --red:      #ef4444;
+      --orange:   #f97316;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:var(--bg); color:var(--text); font-family:'Segoe UI',system-ui,monospace; font-size:13px; min-height:100vh; }
+
+    /* ── Login Screen ── */
+    #login-screen {
+      position:fixed; inset:0; background:var(--bg);
+      display:flex; flex-direction:column;
+      align-items:center; justify-content:center; z-index:1000;
+    }
+    #login-screen.hidden { display:none; }
+    .login-logo { font-size:11px; letter-spacing:6px; color:var(--accent); margin-bottom:6px; }
+    .login-title { font-size:28px; font-weight:700; color:var(--text); margin-bottom:4px; letter-spacing:-0.5px; }
+    .login-sub { color:var(--muted); font-size:12px; margin-bottom:40px; }
+    .login-box {
+      background:var(--surface); border:1px solid var(--border2);
+      border-radius:12px; padding:32px 40px; width:360px; text-align:center;
+    }
+    .login-box h3 { font-size:14px; color:var(--dim); margin-bottom:20px; font-weight:400; letter-spacing:1px; }
+    #login-error { color:var(--red); font-size:11px; margin-top:14px; display:none; padding:8px 12px; background:rgba(239,68,68,0.1); border-radius:6px; }
+
+    /* ── App Layout ── */
+    #app { display:none; flex-direction:column; min-height:100vh; }
+    #app.visible { display:flex; }
+
+    /* Top Bar */
+    #topbar {
+      background:var(--surface); border-bottom:1px solid var(--border);
+      padding:0 24px; height:52px;
+      display:flex; align-items:center; justify-content:space-between;
+      position:sticky; top:0; z-index:50;
+    }
+    .topbar-left { display:flex; align-items:center; gap:16px; }
+    .topbar-logo { font-size:11px; letter-spacing:4px; color:var(--accent); font-weight:700; }
+    .topbar-sep { color:var(--border2); font-size:18px; }
+    .topbar-title { font-size:13px; color:var(--dim); }
+    .topbar-right { display:flex; align-items:center; gap:14px; }
+    .admin-badge {
+      padding:3px 10px; background:rgba(59,130,246,0.15);
+      border:1px solid rgba(59,130,246,0.3);
+      border-radius:20px; font-size:10px; color:var(--accent); letter-spacing:1px;
+    }
+    .user-info { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--dim); }
+    .user-avatar { width:28px; height:28px; border-radius:50%; border:1px solid var(--border2); }
+    #logout-btn { background:none; border:1px solid var(--border2); border-radius:6px; color:var(--muted); padding:5px 10px; cursor:pointer; font-size:11px; }
+    #logout-btn:hover { border-color:var(--red); color:var(--red); }
+
+    /* Nav */
+    #nav {
+      background:var(--surface); border-bottom:1px solid var(--border);
+      padding:0 24px; display:flex; gap:4px;
+    }
+    .nav-tab {
+      padding:10px 16px; font-size:12px; color:var(--muted);
+      cursor:pointer; border-bottom:2px solid transparent;
+      transition:all 0.15s; letter-spacing:0.5px;
+      background:none; border-left:none; border-right:none; border-top:none;
+    }
+    .nav-tab:hover { color:var(--text); }
+    .nav-tab.active { color:var(--accent); border-bottom-color:var(--accent); }
+    .nav-badge {
+      display:inline-block; min-width:18px; padding:1px 5px;
+      background:var(--red); border-radius:10px;
+      font-size:9px; color:#fff; margin-left:6px; text-align:center;
+    }
+
+    /* Main */
+    #main { flex:1; padding:24px; max-width:1400px; margin:0 auto; width:100%; }
+
+    /* Cards */
+    .card {
+      background:var(--surface); border:1px solid var(--border);
+      border-radius:10px; padding:20px;
+    }
+    .card-title { font-size:11px; letter-spacing:2px; color:var(--muted); margin-bottom:16px; font-weight:600; }
+
+    /* Stats Grid */
+    #stats-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:20px; }
+    .stat-card {
+      background:var(--surface); border:1px solid var(--border);
+      border-radius:10px; padding:18px 20px;
+    }
+    .stat-label { font-size:10px; letter-spacing:2px; color:var(--muted); margin-bottom:8px; }
+    .stat-value { font-size:28px; font-weight:700; color:var(--text); line-height:1; }
+    .stat-sub { font-size:10px; color:var(--muted); margin-top:4px; }
+    .stat-card.pending .stat-value { color:var(--yellow); }
+    .stat-card.ok .stat-value     { color:var(--green); }
+    .stat-card.alert .stat-value  { color:var(--red); }
+
+    /* Tables */
+    .data-table { width:100%; border-collapse:collapse; }
+    .data-table th {
+      text-align:left; padding:8px 12px; font-size:10px;
+      letter-spacing:1.5px; color:var(--muted); font-weight:600;
+      border-bottom:1px solid var(--border); white-space:nowrap;
+    }
+    .data-table td {
+      padding:10px 12px; border-bottom:1px solid var(--border);
+      vertical-align:middle; color:var(--dim);
+    }
+    .data-table tr:last-child td { border-bottom:none; }
+    .data-table tr:hover td { background:rgba(255,255,255,0.02); }
+    .data-table td strong { color:var(--text); }
+
+    /* Status Pills */
+    .pill {
+      display:inline-block; padding:2px 9px; border-radius:20px;
+      font-size:10px; font-weight:600; letter-spacing:0.5px;
+    }
+    .pill-pending  { background:rgba(234,179,8,0.15);  color:var(--yellow); border:1px solid rgba(234,179,8,0.3); }
+    .pill-approved { background:rgba(34,197,94,0.15);  color:var(--green);  border:1px solid rgba(34,197,94,0.3); }
+    .pill-rejected { background:rgba(239,68,68,0.15);  color:var(--red);    border:1px solid rgba(239,68,68,0.3); }
+    .pill-bug      { background:rgba(249,115,22,0.15); color:var(--orange); border:1px solid rgba(249,115,22,0.3); }
+
+    /* Scale dots */
+    .scale-bar { display:flex; gap:3px; align-items:center; }
+    .scale-dot { width:8px; height:8px; border-radius:50%; background:var(--border2); }
+    .scale-dot.on { background:var(--red); }
+    .scale-dot.s1 { background:#84cc16; }
+    .scale-dot.s2 { background:#eab308; }
+    .scale-dot.s3 { background:#f97316; }
+    .scale-dot.s4 { background:#ef4444; }
+    .scale-dot.s5 { background:#dc2626; }
+
+    /* Action Buttons */
+    .btn { padding:5px 12px; border-radius:6px; border:none; cursor:pointer; font-size:11px; font-weight:600; transition:all 0.15s; }
+    .btn-approve { background:rgba(34,197,94,0.15);  color:var(--green);  border:1px solid rgba(34,197,94,0.3); }
+    .btn-approve:hover { background:rgba(34,197,94,0.3); }
+    .btn-reject  { background:rgba(239,68,68,0.15);  color:var(--red);    border:1px solid rgba(239,68,68,0.3); }
+    .btn-reject:hover  { background:rgba(239,68,68,0.3); }
+    .btn-lock    { background:rgba(234,179,8,0.15);  color:var(--yellow); border:1px solid rgba(234,179,8,0.3); }
+    .btn-lock:hover    { background:rgba(234,179,8,0.3); }
+    .btn-view    { background:rgba(59,130,246,0.12); color:var(--accent); border:1px solid rgba(59,130,246,0.25); }
+    .btn-view:hover    { background:rgba(59,130,246,0.25); }
+    .btn-dismiss { background:rgba(100,116,139,0.15); color:var(--muted); border:1px solid var(--border2); }
+    .btn-dismiss:hover { background:rgba(100,116,139,0.25); color:var(--dim); }
+    .btn-actions { display:flex; gap:6px; flex-wrap:nowrap; }
+
+    /* Detail Drawer */
+    #detail-drawer {
+      position:fixed; right:0; top:52px; bottom:0; width:440px;
+      background:var(--surface); border-left:1px solid var(--border2);
+      z-index:40; overflow-y:auto; padding:24px;
+      transform:translateX(100%); transition:transform 0.25s ease;
+    }
+    #detail-drawer.open { transform:translateX(0); }
+    .drawer-close { float:right; background:none; border:none; color:var(--muted); font-size:18px; cursor:pointer; }
+    .drawer-close:hover { color:var(--text); }
+    .drawer-field { margin-bottom:14px; }
+    .drawer-field .df-label { font-size:10px; letter-spacing:1.5px; color:var(--muted); margin-bottom:4px; }
+    .drawer-field .df-value { color:var(--text); font-size:13px; word-break:break-word; }
+    .drawer-field .df-value a { color:var(--accent); text-decoration:none; }
+    .drawer-sep { border:none; border-top:1px solid var(--border); margin:16px 0; }
+    .drawer-actions { display:flex; gap:8px; margin-top:20px; flex-wrap:wrap; }
+    .drawer-actions .btn { padding:8px 16px; font-size:12px; }
+
+    /* Reject Modal */
+    #reject-modal {
+      display:none; position:fixed; inset:0;
+      background:rgba(0,0,0,0.7); z-index:200;
+      align-items:center; justify-content:center;
+    }
+    #reject-modal.open { display:flex; }
+    .modal-box {
+      background:var(--surface); border:1px solid var(--border2);
+      border-radius:12px; padding:28px; width:400px;
+    }
+    .modal-box h3 { font-size:14px; margin-bottom:14px; color:var(--red); }
+    .modal-box textarea {
+      width:100%; padding:10px; background:rgba(255,255,255,0.05);
+      border:1px solid var(--border2); border-radius:7px;
+      color:var(--text); font-size:12px; resize:vertical; min-height:80px;
+      outline:none; font-family:inherit;
+    }
+    .modal-actions { display:flex; gap:8px; margin-top:14px; justify-content:flex-end; }
+
+    /* Audit Timeline */
+    .audit-item { display:flex; gap:14px; padding:12px 0; border-bottom:1px solid var(--border); }
+    .audit-item:last-child { border-bottom:none; }
+    .audit-dot { width:8px; height:8px; border-radius:50%; margin-top:4px; flex-shrink:0; }
+    .audit-time { font-size:10px; color:var(--muted); white-space:nowrap; margin-top:2px; }
+    .audit-action { color:var(--text); font-size:12px; }
+    .audit-user { font-size:10px; color:var(--muted); margin-top:2px; }
+
+    /* Loading / Empty */
+    .loading { text-align:center; padding:40px; color:var(--muted); font-size:12px; }
+    .empty { text-align:center; padding:40px; color:var(--muted); }
+    .empty-icon { font-size:32px; margin-bottom:8px; }
+
+    /* Two-col layout */
+    .two-col { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+
+    /* Activity chart placeholder */
+    .mini-chart { display:flex; align-items:flex-end; gap:3px; height:40px; margin-top:8px; }
+    .bar { flex:1; background:rgba(59,130,246,0.3); border-radius:2px 2px 0 0; min-height:4px; }
+    .bar.today { background:var(--accent); }
+
+    @media(max-width:900px) {
+      #stats-grid { grid-template-columns:repeat(2,1fr); }
+      .two-col { grid-template-columns:1fr; }
+      #detail-drawer { width:100%; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Login ── -->
+<div id="login-screen">
+  <div class="login-logo">⬡ ECOATLAS</div>
+  <div class="login-title">Admin Panel</div>
+  <div class="login-sub">Nur für autorisierte Team-Mitglieder</div>
+  <div class="login-box">
+    <h3>ANMELDEN MIT GOOGLE</h3>
+    <div id="g_id_onload"
+      data-client_id="352097804468-npmecer4u1c4iaub3bsc7ag9rqga15q1.apps.googleusercontent.com"
+      data-callback="onGoogleLogin"
+      data-auto_prompt="false">
+    </div>
+    <div class="g_id_signin"
+      data-type="standard"
+      data-theme="filled_black"
+      data-text="signin_with"
+      data-shape="rectangular"
+      data-size="large"
+      data-width="280">
+    </div>
+    <div id="login-error">⛔ Zugriff verweigert – diese E-Mail ist nicht autorisiert</div>
+  </div>
+</div>
+
+<!-- ── App ── -->
+<div id="app">
+
+  <div id="topbar">
+    <div class="topbar-left">
+      <div class="topbar-logo">⬡ ECOATLAS</div>
+      <div class="topbar-sep">/</div>
+      <div class="topbar-title">Admin Panel</div>
+    </div>
+    <div class="topbar-right">
+      <span class="admin-badge">ADMIN</span>
+      <div class="user-info">
+        <img id="user-avatar" class="user-avatar" src="" alt="">
+        <span id="user-name">—</span>
+      </div>
+      <button id="logout-btn" onclick="logout()">Abmelden</button>
+    </div>
+  </div>
+
+  <div id="nav">
+    <button class="nav-tab active" onclick="showTab('dashboard')">Dashboard</button>
+    <button class="nav-tab" onclick="showTab('quarantine')" id="tab-quarantine">
+      Quarantäne <span class="nav-badge" id="badge-pending">0</span>
+    </button>
+    <button class="nav-tab" onclick="showTab('bugs')" id="tab-bugs">
+      Fehler-Meldungen <span class="nav-badge" id="badge-bugs" style="background:var(--orange)">0</span>
+    </button>
+    <button class="nav-tab" onclick="showTab('audit')">Audit-Log</button>
+  </div>
+
+  <div id="main">
+
+    <!-- ── Dashboard ── -->
+    <div id="tab-dashboard">
+      <div id="stats-grid">
+        <div class="stat-card pending">
+          <div class="stat-label">OFFENE MELDUNGEN</div>
+          <div class="stat-value" id="stat-pending">—</div>
+          <div class="stat-sub">warten auf Prüfung</div>
+        </div>
+        <div class="stat-card ok">
+          <div class="stat-label">VERIFIZIERTE STANDORTE</div>
+          <div class="stat-value" id="stat-core">—</div>
+          <div class="stat-sub">in eco_core</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">COMMUNITY GESAMT</div>
+          <div class="stat-value" id="stat-total">—</div>
+          <div class="stat-sub">alle Submissions</div>
+        </div>
+        <div class="stat-card alert">
+          <div class="stat-label">FEHLER-MELDUNGEN</div>
+          <div class="stat-value" id="stat-bugs">—</div>
+          <div class="stat-sub">unbearbeitet</div>
+        </div>
+      </div>
+
+      <div class="two-col">
+        <div class="card">
+          <div class="card-title">LETZTE MELDUNGEN</div>
+          <table class="data-table">
+            <thead><tr>
+              <th>Typ</th><th>Koordinaten</th><th>Status</th><th>Votes</th><th>Datum</th>
+            </tr></thead>
+            <tbody id="dash-recent"></tbody>
+          </table>
+        </div>
+        <div class="card">
+          <div class="card-title">AKTIVITÄT (LETZTE 7 TAGE)</div>
+          <div id="activity-chart" class="mini-chart"></div>
+          <div id="activity-labels" style="display:flex;gap:3px;margin-top:4px;"></div>
+          <hr style="border-color:var(--border);margin:16px 0">
+          <div class="card-title">TOP STANDORTE NACH VOTES</div>
+          <table class="data-table">
+            <thead><tr><th>Name</th><th>Typ</th><th>↑ Votes</th></tr></thead>
+            <tbody id="dash-top"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Quarantäne ── -->
+    <div id="tab-quarantine" style="display:none">
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+          <div class="card-title" style="margin:0">QUARANTÄNE-QUEUE</div>
+          <div style="display:flex;gap:8px;">
+            <select id="filter-status" onchange="loadQuarantine()" style="background:var(--bg);border:1px solid var(--border2);color:var(--dim);padding:5px 10px;border-radius:6px;font-size:11px;">
+              <option value="pending">Ausstehend</option>
+              <option value="approved">Freigegeben</option>
+              <option value="rejected">Abgelehnt</option>
+              <option value="">Alle</option>
+            </select>
+            <button class="btn btn-view" onclick="loadQuarantine()">↻ Aktualisieren</button>
+          </div>
+        </div>
+        <table class="data-table">
+          <thead><tr>
+            <th>ID</th><th>Typ</th><th>Name</th><th>Koordinaten</th>
+            <th>Skala</th><th>Votes</th><th>Status</th><th>Datum</th><th>Aktionen</th>
+          </tr></thead>
+          <tbody id="quarantine-table"></tbody>
+        </table>
+        <div id="quarantine-empty" class="empty" style="display:none">
+          <div class="empty-icon">✅</div>
+          <div>Keine ausstehenden Meldungen</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Fehler-Meldungen ── -->
+    <div id="tab-bugs" style="display:none">
+      <div class="two-col">
+
+        <!-- Eintrag als falsch markiert -->
+        <div class="card">
+          <div class="card-title">FALSCHE EINTRÄGE (von Usern gemeldet)</div>
+          <table class="data-table">
+            <thead><tr>
+              <th>Submission</th><th>Grund</th><th>Gemeldet von</th><th>Datum</th><th>Aktion</th>
+            </tr></thead>
+            <tbody id="bugs-entries"></tbody>
+          </table>
+          <div id="bugs-entries-empty" class="empty" style="display:none">
+            <div class="empty-icon">🎯</div><div>Keine Meldungen</div>
+          </div>
+        </div>
+
+        <!-- App-Bug-Reports -->
+        <div class="card">
+          <div class="card-title">APP-FEHLER (Bug Reports)</div>
+          <table class="data-table">
+            <thead><tr>
+              <th>Fehler</th><th>URL</th><th>Gemeldet</th><th>Aktion</th>
+            </tr></thead>
+            <tbody id="bugs-app"></tbody>
+          </table>
+          <div id="bugs-app-empty" class="empty" style="display:none">
+            <div class="empty-icon">🐛</div><div>Keine Bug-Reports</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── Audit Log ── -->
+    <div id="tab-audit" style="display:none">
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+          <div class="card-title" style="margin:0">AUDIT-LOG</div>
+          <button class="btn btn-view" onclick="loadAudit()">↻ Aktualisieren</button>
+        </div>
+        <div id="audit-list"></div>
+        <div id="audit-empty" class="empty" style="display:none">
+          <div class="empty-icon">📋</div><div>Noch keine Audit-Einträge</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<!-- ── Detail Drawer ── -->
+<div id="detail-drawer">
+  <button class="drawer-close" onclick="closeDrawer()">✕</button>
+  <div id="drawer-content"></div>
+</div>
+
+<!-- ── Reject Modal ── -->
+<div id="reject-modal">
+  <div class="modal-box">
+    <h3>Meldung ablehnen</h3>
+    <p style="color:var(--muted);font-size:12px;margin-bottom:12px;">Begründung für den Melder (optional):</p>
+    <textarea id="reject-reason" placeholder="z.B. Standort nicht verifizierbar, Duplikat, unzureichende Beschreibung…"></textarea>
+    <div class="modal-actions">
+      <button class="btn btn-dismiss" onclick="closeRejectModal()">Abbrechen</button>
+      <button class="btn btn-reject" onclick="confirmReject()">Ablehnen bestätigen</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const TILE_SERVER = 'https://ecoatlas-tile-server-nn46zdsrqa-ew.a.run.app';
+
+// ── Team-E-Mails (hier ergänzen) ──
+const ALLOWED_EMAILS = [
+  // deine E-Mail hier eintragen:
+  // 'admin@beispiel.de',
+  // 'team@ecoatlas.de',
+];
+
+// ── Auth State ──
+let currentUser   = null;
+let adminToken    = null;
+let rejectTargetId = null;
+
+// ── Google Login Callback ──
+function onGoogleLogin(response) {
+  const payload = parseJwt(response.credential);
+  const email   = payload.email?.toLowerCase();
+
+  // Wenn ALLOWED_EMAILS leer ist → alle Google-User zulassen (Entwicklungsmodus)
+  const allowed = ALLOWED_EMAILS.length === 0 || ALLOWED_EMAILS.map(e=>e.toLowerCase()).includes(email);
+
+  if (!allowed) {
+    document.getElementById('login-error').style.display = 'block';
+    return;
+  }
+
+  currentUser = payload;
+  adminToken  = response.credential;
+
+  document.getElementById('login-screen').classList.add('hidden');
+  document.getElementById('app').classList.add('visible');
+  document.getElementById('user-name').textContent   = payload.name;
+  document.getElementById('user-avatar').src         = payload.picture;
+
+  loadDashboard();
+}
+
+function logout() {
+  currentUser = null; adminToken = null;
+  document.getElementById('login-screen').classList.remove('hidden');
+  document.getElementById('app').classList.remove('visible');
+}
+
+function parseJwt(token) {
+  try { return JSON.parse(atob(token.split('.')[1])); }
+  catch { return {}; }
+}
+
+// ── Tabs ──
+let activeTab = 'dashboard';
+function showTab(name) {
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('#main > div').forEach(d => d.style.display='none');
+
+  document.getElementById('tab-'+name).style.display = 'block';
+  event.target.classList.add('active');
+  activeTab = name;
+
+  if (name==='quarantine') loadQuarantine();
+  if (name==='bugs')       loadBugs();
+  if (name==='audit')      loadAudit();
+}
+
+// ── API Helper ──
+async function apiGet(path) {
+  const res = await fetch(`${TILE_SERVER}${path}`, {
+    headers: { 'Authorization': `Bearer ${adminToken}` }
+  });
+  if (!res.ok) throw new Error(`API ${res.status}`);
+  return res.json();
+}
+
+async function apiPost(path, body) {
+  const res = await fetch(`${TILE_SERVER}${path}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${adminToken}`
+    },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`API ${res.status}`);
+  return res.json();
+}
+
+// ── DASHBOARD ──
+async function loadDashboard() {
+  try {
+    const data = await apiGet('/admin/stats');
+    document.getElementById('stat-pending').textContent = data.pending ?? '—';
+    document.getElementById('stat-core').textContent    = data.core_count ?? '—';
+    document.getElementById('stat-total').textContent   = data.total_submissions ?? '—';
+    document.getElementById('stat-bugs').textContent    = data.open_bugs ?? '—';
+    document.getElementById('badge-pending').textContent = data.pending ?? 0;
+    document.getElementById('badge-bugs').textContent    = data.open_bugs ?? 0;
+    renderActivity(data.activity ?? []);
+    renderRecentTable(data.recent ?? []);
+    renderTopTable(data.top_votes ?? []);
+  } catch {
+    // Mock-Daten wenn API noch nicht antwortet
+    document.getElementById('stat-pending').textContent = '–';
+    document.getElementById('stat-core').textContent    = '–';
+    document.getElementById('stat-total').textContent   = '–';
+    document.getElementById('stat-bugs').textContent    = '–';
+    renderActivity([]);
+    document.getElementById('dash-recent').innerHTML =
+      '<tr><td colspan="5" style="color:var(--muted);text-align:center;padding:20px">Noch keine Daten – API-Route /admin/stats wird beim nächsten Deploy aktiv</td></tr>';
+  }
+}
+
+function renderActivity(days) {
+  const chart  = document.getElementById('activity-chart');
+  const labels = document.getElementById('activity-labels');
+  const maxVal = Math.max(...days.map(d=>d.count), 1);
+  chart.innerHTML  = '';
+  labels.innerHTML = '';
+  const dayNames   = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+  const today      = new Date().getDay();
+
+  for (let i=6; i>=0; i--) {
+    const d     = days[6-i] ?? { count:0 };
+    const pct   = Math.max((d.count/maxVal)*100, 5);
+    const isToday = i===0;
+    const bar   = document.createElement('div');
+    bar.className = 'bar'+(isToday?' today':'');
+    bar.style.height = pct+'%';
+    bar.title = `${d.count} Meldungen`;
+    chart.appendChild(bar);
+    const lbl = document.createElement('div');
+    lbl.style.cssText = 'flex:1;text-align:center;font-size:9px;color:var(--muted)';
+    lbl.textContent = dayNames[(today-i+7)%7];
+    labels.appendChild(lbl);
+  }
+}
+
+function renderRecentTable(rows) {
+  const tb = document.getElementById('dash-recent');
+  if (!rows.length) { tb.innerHTML='<tr><td colspan="5" style="color:var(--muted);text-align:center">Keine Daten</td></tr>'; return; }
+  tb.innerHTML = rows.map(r=>`
+    <tr>
+      <td><strong>${r.proposed_type??'—'}</strong></td>
+      <td style="font-family:monospace;font-size:11px">${formatCoords(r.lng,r.lat)}</td>
+      <td>${statusPill(r.status)}</td>
+      <td>↑${r.upvotes??0} ↓${r.downvotes??0}</td>
+      <td>${fmtDate(r.created_at)}</td>
+    </tr>`).join('');
+}
+
+function renderTopTable(rows) {
+  const tb = document.getElementById('dash-top');
+  if (!rows.length) { tb.innerHTML='<tr><td colspan="3" style="color:var(--muted);text-align:center">Keine Daten</td></tr>'; return; }
+  tb.innerHTML = rows.map(r=>`
+    <tr>
+      <td><strong>${r.proposed_name??r.proposed_type??'—'}</strong></td>
+      <td>${r.proposed_type??'—'}</td>
+      <td style="color:var(--green)">↑ ${r.upvotes??0}</td>
+    </tr>`).join('');
+}
+
+// ── QUARANTÄNE ──
+async function loadQuarantine() {
+  const status = document.getElementById('filter-status').value;
+  const tb = document.getElementById('quarantine-table');
+  tb.innerHTML = '<tr><td colspan="9" class="loading">Lädt…</td></tr>';
+  document.getElementById('quarantine-empty').style.display='none';
+
+  try {
+    const data = await apiGet(`/admin/submissions?status=${status}&limit=50`);
+    const rows = data.submissions ?? [];
+
+    if (!rows.length) {
+      tb.innerHTML='';
+      document.getElementById('quarantine-empty').style.display='block';
+      return;
+    }
+
+    tb.innerHTML = rows.map(r=>`
+      <tr>
+        <td style="font-family:monospace;font-size:10px;color:var(--muted)">${r.submission_id?.slice(-8)??'—'}</td>
+        <td><strong>${r.proposed_type??'—'}</strong></td>
+        <td>${r.proposed_name??'—'}</td>
+        <td style="font-family:monospace;font-size:11px">${formatCoords(r.lng,r.lat)}</td>
+        <td>${scaleBar(r.proposed_value)}</td>
+        <td style="white-space:nowrap">
+          <span style="color:var(--green)">↑${r.upvotes??0}</span>
+          <span style="color:var(--red);margin-left:4px">↓${r.downvotes??0}</span>
+        </td>
+        <td>${statusPill(r.status)}</td>
+        <td style="white-space:nowrap">${fmtDate(r.created_at)}</td>
+        <td>
+          <div class="btn-actions">
+            <button class="btn btn-view"    onclick="openDrawer('${r.submission_id}')">Detail</button>
+            ${r.status==='pending' ? `
+            <button class="btn btn-approve" onclick="approveSubmission('${r.submission_id}')">✓</button>
+            <button class="btn btn-reject"  onclick="openRejectModal('${r.submission_id}')">✗</button>
+            ` : ''}
+          </div>
+        </td>
+      </tr>`).join('');
+  } catch {
+    tb.innerHTML='<tr><td colspan="9" style="color:var(--muted);text-align:center;padding:20px">API-Route noch nicht aktiv – nach Deploy verfügbar</td></tr>';
+  }
+}
+
+async function approveSubmission(id) {
+  try {
+    await apiPost('/admin/submission/approve', { submission_id: id });
+    showToast('✅ Freigegeben und in eco_core übertragen');
+    loadQuarantine(); loadDashboard();
+  } catch { showToast('Fehler beim Freigeben', true); }
+}
+
+function openRejectModal(id) {
+  rejectTargetId = id;
+  document.getElementById('reject-reason').value='';
+  document.getElementById('reject-modal').classList.add('open');
+}
+function closeRejectModal() { document.getElementById('reject-modal').classList.remove('open'); }
+async function confirmReject() {
+  const reason = document.getElementById('reject-reason').value.trim();
+  try {
+    await apiPost('/admin/submission/reject', { submission_id: rejectTargetId, reason });
+    closeRejectModal();
+    showToast('✗ Meldung abgelehnt');
+    loadQuarantine(); loadDashboard();
+  } catch { showToast('Fehler beim Ablehnen', true); }
+}
+
+// ── DETAIL DRAWER ──
+async function openDrawer(submissionId) {
+  document.getElementById('detail-drawer').classList.add('open');
+  document.getElementById('drawer-content').innerHTML = '<div class="loading">Lädt…</div>';
+  try {
+    const d = await apiGet(`/api/community/submission/${submissionId}`);
+    document.getElementById('drawer-content').innerHTML = `
+      <h3 style="color:var(--accent);margin-bottom:4px;font-size:14px">Submission Detail</h3>
+      <div style="color:var(--muted);font-size:10px;font-family:monospace;margin-bottom:18px">${d.submission_id}</div>
+      <div class="drawer-field"><div class="df-label">STATUS</div><div class="df-value">${statusPill(d.status)}</div></div>
+      <div class="drawer-field"><div class="df-label">TYP</div><div class="df-value">${d.proposed_type??'—'}</div></div>
+      <div class="drawer-field"><div class="df-label">NAME</div><div class="df-value">${d.proposed_name??'—'}</div></div>
+      <div class="drawer-field"><div class="df-label">KOORDINATEN</div><div class="df-value" style="font-family:monospace">${formatCoords(d.lng,d.lat)}</div></div>
+      <div class="drawer-field"><div class="df-label">SCHADENSGRAD</div><div class="df-value">${scaleBar(d.proposed_value)} ${['Unklar','Minimal','Gering','Mittel','Hoch','Kritisch'][d.proposed_value??0]}</div></div>
+      <div class="drawer-field"><div class="df-label">BESCHREIBUNG</div><div class="df-value">${d.proposed_description??'—'}</div></div>
+      <div class="drawer-field"><div class="df-label">QUELLE</div><div class="df-value">${d.proposed_source_url?`<a href="${d.proposed_source_url}" target="_blank">${d.proposed_source_url}</a>`:'—'}</div></div>
+      <div class="drawer-field"><div class="df-label">GEMELDET VON</div><div class="df-value">${d.user_display_name??'Anonym'}</div></div>
+      <div class="drawer-field"><div class="df-label">DATUM</div><div class="df-value">${fmtDate(d.created_at)}</div></div>
+      <hr class="drawer-sep">
+      <div class="df-label">VOTES</div>
+      <div style="margin-top:6px;color:var(--green)">↑ ${d.upvotes??0} Upvotes</div>
+      <div style="color:var(--red)">↓ ${d.downvotes??0} Downvotes</div>
+      <hr class="drawer-sep">
+      <div class="df-label">KOMMENTARE (${d.comments?.length??0})</div>
+      ${(d.comments??[]).map(c=>`
+        <div style="margin-top:8px;padding:8px;background:rgba(255,255,255,0.03);border-radius:6px;font-size:11px;">
+          <div style="color:var(--accent)">${c.user_display_name??'Anonym'}</div>
+          <div style="color:var(--dim);margin-top:3px">${c.content}</div>
+          <div style="color:var(--muted);font-size:10px;margin-top:3px">${fmtDate(c.created_at)}</div>
+        </div>`).join('')||'<div style="color:var(--muted);font-size:11px;margin-top:6px">Keine Kommentare</div>'}
+      ${d.status==='pending'?`
+      <div class="drawer-actions">
+        <button class="btn btn-approve" onclick="approveSubmission('${d.submission_id}');closeDrawer()">✓ Freigeben</button>
+        <button class="btn btn-reject"  onclick="openRejectModal('${d.submission_id}');closeDrawer()">✗ Ablehnen</button>
+        <button class="btn btn-lock"    onclick="showToast('🔒 Sperren – kommt im nächsten Deploy')">🔒 Sperren</button>
+      </div>`:''}
+    `;
+  } catch {
+    document.getElementById('drawer-content').innerHTML = '<div style="color:var(--muted)">Konnte Detail nicht laden</div>';
+  }
+}
+function closeDrawer() { document.getElementById('detail-drawer').classList.remove('open'); }
+
+// ── BUGS ──
+async function loadBugs() {
+  try {
+    const data = await apiGet('/admin/bugs');
+    renderBugEntries(data.wrong_entries??[]);
+    renderBugApp(data.app_bugs??[]);
+  } catch {
+    document.getElementById('bugs-entries').innerHTML='<tr><td colspan="5" style="color:var(--muted);text-align:center;padding:20px">Nach Deploy verfügbar</td></tr>';
+    document.getElementById('bugs-app').innerHTML='<tr><td colspan="4" style="color:var(--muted);text-align:center;padding:20px">Nach Deploy verfügbar</td></tr>';
+  }
+}
+
+function renderBugEntries(rows) {
+  const tb=document.getElementById('bugs-entries');
+  if(!rows.length){ tb.innerHTML=''; document.getElementById('bugs-entries-empty').style.display='block'; return; }
+  document.getElementById('bugs-entries-empty').style.display='none';
+  tb.innerHTML=rows.map(r=>`
+    <tr>
+      <td style="font-family:monospace;font-size:10px">${r.submission_id?.slice(-8)??'—'}</td>
+      <td>${r.reason??'—'}</td>
+      <td>${r.reported_by??'Anonym'}</td>
+      <td>${fmtDate(r.created_at)}</td>
+      <td><div class="btn-actions">
+        <button class="btn btn-view" onclick="openDrawer('${r.submission_id}')">Prüfen</button>
+        <button class="btn btn-dismiss" onclick="showToast('Markiert als geprüft')">Erledigt</button>
+      </div></td>
+    </tr>`).join('');
+}
+
+function renderBugApp(rows) {
+  const tb=document.getElementById('bugs-app');
+  if(!rows.length){ tb.innerHTML=''; document.getElementById('bugs-app-empty').style.display='block'; return; }
+  document.getElementById('bugs-app-empty').style.display='none';
+  tb.innerHTML=rows.map(r=>`
+    <tr>
+      <td><strong>${r.title??'Bug'}</strong><div style="font-size:10px;color:var(--muted)">${r.description??''}</div></td>
+      <td style="font-size:10px;color:var(--muted)">${r.page_url??'—'}</td>
+      <td>${fmtDate(r.created_at)}</td>
+      <td><button class="btn btn-dismiss" onclick="showToast('Markiert als erledigt')">Erledigt</button></td>
+    </tr>`).join('');
+}
+
+// ── AUDIT LOG ──
+async function loadAudit() {
+  document.getElementById('audit-list').innerHTML='<div class="loading">Lädt…</div>';
+  try {
+    const data = await apiGet('/admin/audit?limit=50');
+    const rows = data.entries ?? [];
+    if(!rows.length){ document.getElementById('audit-empty').style.display='block'; document.getElementById('audit-list').innerHTML=''; return; }
+    const colors={approve:'var(--green)',reject:'var(--red)',insert:'var(--accent)',delete:'var(--orange)',lock:'var(--yellow)'};
+    document.getElementById('audit-list').innerHTML=rows.map(r=>`
+      <div class="audit-item">
+        <div class="audit-dot" style="background:${colors[r.action_type]??'var(--muted)'}"></div>
+        <div style="flex:1">
+          <div class="audit-action">${r.action_description??r.action_type}</div>
+          <div class="audit-user">${r.changed_by??'System'} · ${r.table_name??''}</div>
+        </div>
+        <div class="audit-time">${fmtDate(r.changed_at)}</div>
+      </div>`).join('');
+  } catch {
+    document.getElementById('audit-list').innerHTML='<div style="color:var(--muted);text-align:center;padding:20px">Nach Deploy verfügbar</div>';
+  }
+}
+
+// ── Helpers ──
+function statusPill(s) {
+  const map={pending:'pill-pending',approved:'pill-approved',rejected:'pill-rejected'};
+  const lbl={pending:'AUSSTEHEND',approved:'FREIGEGEBEN',rejected:'ABGELEHNT'};
+  return `<span class="pill ${map[s]??'pill-pending'}">${lbl[s]??s}</span>`;
+}
+
+function scaleBar(v) {
+  v = v??0;
+  const colors=['','s1','s2','s3','s4','s5'];
+  return `<div class="scale-bar">${[1,2,3,4,5].map(i=>`<div class="scale-dot ${i<=v?colors[i]:''}"></div>`).join('')}</div>`;
+}
+
+function formatCoords(lng,lat) {
+  if(!lng&&!lat) return '—';
+  return `${(+lat).toFixed(4)}, ${(+lng).toFixed(4)}`;
+}
+
+function fmtDate(s) {
+  if(!s) return '—';
+  try {
+    const d=new Date(s);
+    return d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'2-digit'})+' '+
+           d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+  } catch { return s; }
+}
+
+// Toast
+function showToast(msg, isError=false) {
+  const t=document.createElement('div');
+  t.style.cssText=`position:fixed;bottom:24px;right:24px;padding:10px 18px;background:${isError?'#7f1d1d':'#14532d'};color:#fff;border-radius:8px;font-size:12px;z-index:999;opacity:1;transition:opacity 0.4s`;
+  t.textContent=msg;
+  document.body.appendChild(t);
+  setTimeout(()=>{ t.style.opacity='0'; setTimeout(()=>t.remove(),400); },2500);
+}
+</script>
+</body>
+</html>

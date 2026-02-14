@@ -101,7 +101,12 @@ export function buildMvtTile(
     return Buffer.alloc(0);
   }
 
-  return Buffer.from(vtpbf.fromGeojsonVt(layers));
+  const cleanLayers = Object.fromEntries(
+    Object.entries(layers).filter(([, v]) => v !== null)
+  ) as unknown as Parameters<typeof vtpbf.fromGeojsonVt>[0];
+
+  return Buffer.from(vtpbf.fromGeojsonVt(cleanLayers));
+
 }
 
 // ----------------------------------------------------------------

@@ -5,6 +5,7 @@
 
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
+import path from 'path';
 
 import {
   tileToBounds,
@@ -43,6 +44,7 @@ app.use(cors({
   methods: ['GET', 'POST'],
 }));
 app.use(express.json());
+app.use(express.static(path.join(__dirname, '..'))); 
 
 // ----------------------------------------------------------------
 // Health Check (Cloud Run Liveness Probe)
@@ -111,6 +113,7 @@ app.get('/tiles/:z/:x/:y.mvt', async (req: Request, res: Response, next: NextFun
 app.post('/upload/presign', handlePresignRequest);
 app.post('/upload/confirm', handleUploadConfirm);
 app.get('/upload/status/*', handleUploadStatus);
+
 
 // ----------------------------------------------------------------
 // Emitter Detail: /api/emitter/{id}
