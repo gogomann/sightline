@@ -149,7 +149,7 @@ export async function handlePresignRequest(req: Request, res: Response): Promise
     const bucket = storage.bucket(BUCKET_NAME);
     const file = bucket.file(objectPath);
 
-    const [uploadUrl] = await file.generateSignedUrl({
+    const [uploadUrl] = await file.getSignedUrl({
       version: 'v4',
       action: 'write',
       expires: Date.now() + SIGNED_URL_EXPIRES_MINUTES * 60 * 1000,
