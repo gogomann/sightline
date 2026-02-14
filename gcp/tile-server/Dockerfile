@@ -4,15 +4,12 @@ WORKDIR /app
 
 # Dependencies zuerst (besseres Layer-Caching)
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm install --omit=dev
 
 # Build
 COPY tsconfig.json ./
 COPY src/ ./src/
-RUN npm install typescript ts-node --save-dev && npm run build
-
-# Dev-Dependencies entfernen
-RUN npm prune --production
+RUN npm install --save-dev typescript ts-node && npm run build && npm prune --omit=dev
 
 ENV NODE_ENV=production
 ENV PORT=8080
